@@ -1,0 +1,12 @@
+# Windows cruft
+*.suo
+*.ncb
+*.sdf
+*.opensdf
+Debug/
+Release/
+ipch/
+
+.DS_Store
+*.xcuserstate
+*.xcuserdatad

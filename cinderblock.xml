@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<cinder>
+<block
+	name="OculusRift"
+	id="org.libcinder.oculusrift"
+	author="Eric Renaud-Houde & Paul Houx"
+	license="GPL, Commercial"
+	summary="Oculus Rift SDK library for Cinder"
+	url="https://github.com/num3ric/Cinder-OculusRift"
+	git="git://github.com:num3ric/Cinder-OculusRift.git"
+	>
+	<supports os="msw"/>
+	<supports os="macosx"/>
+	<includePath>include</includePath>
+	<includePath>LibOVR/Include</includePath>
+	<includePath>LibOVR/Src</includePath>
+    
+    <header>include/CinderOculus.h</header>
+    <source>include/CinderOculus.cpp</source>
+    
+    <!--
+	<includePath>3rdParty/glext</includePath>
+    
+    <sourcePattern>LibOVR/Src/*.cpp</sourcePattern>
+    <sourcePattern>LibOVR/Src/CAPI/*.cpp</sourcePattern>
+    <sourcePattern>LibOVR/Src/CAPI/D3D1X/*.cpp</sourcePattern>
+    <sourcePattern>LibOVR/Src/CAPI/GL/*.cpp</sourcePattern>
+    <sourcePattern>LibOVR/Src/Displays/*.cpp</sourcePattern>
+    <sourcePattern>LibOVR/Src/Kernel/*.cpp</sourcePattern>
+    <sourcePattern>LibOVR/Src/Net/*.cpp</sourcePattern>
+    <sourcePattern>LibOVR/Src/Service/*.cpp</sourcePattern>
+    <sourcePattern>LibOVR/Src/Tracking/*.cpp</sourcePattern>
+    <sourcePattern>LibOVR/Src/Util/*.cpp</sourcePattern-->
+    
+	<platform os="msw">
+		<platform config="debug">
+			<staticLibrary absolute="true">winmm.lib</staticLibrary>
+			<staticLibrary>LibOVR/Lib/$(PlatformTarget)/VS2013/libovrd.lib</staticLibrary>
+		</platform>
+		<platform config="release">
+			<staticLibrary absolute="true">winmm.lib</staticLibrary>
+			<staticLibrary>LibOVR/Lib/$(PlatformTarget)/VS2013/libovr.lib</staticLibrary>
+		</platform>
+	</platform>
+	<platform os="macosx">
+		<platform config="debug">
+			<staticLibrary>LibOVR/Lib/Mac/Debug/libovr.a</staticLibrary>
+		</platform>
+		<platform config="release">
+			<staticLibrary>LibOVR/Lib/Mac/Release/libovr.a</staticLibrary>
+		</platform>
+	</platform>
+</block>
+</cinder>
