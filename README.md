@@ -15,11 +15,10 @@ Samples
 
 Usage
 -----------------
-First, initialize the rift manager in prepareSettings, and disable framerate. (Aslo make sure that msaa 16 is disabled.)
+First, initialize the rift manager in prepareSettings, *and also make sure to disable framerate*. (Aslo make sure that msaa 16 is disabled.)
 
 ```
 hmd::RiftManager::initialize();
-settings->disableFrameRate();
 ```
 
 Create an Oculus Rift instance, and attach it to a window (with vsync enabled preferably).
