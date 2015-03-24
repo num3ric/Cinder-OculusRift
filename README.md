@@ -15,7 +15,7 @@ Samples
 
 Usage
 -----------------
-First, initialize the rift manager in prepareSettings, *and also make sure to disable framerate*. (Aslo make sure that msaa 16 is disabled.)
+First, initialize the rift manager in prepareSettings. *Also make sure to disable framerate and msaa 16*!)
 
 ```
 hmd::RiftManager::initialize();
@@ -28,7 +28,7 @@ hmd::OculusRift		mRift;
 mRift.attachToWindow( app::getWindow() )
 ```
 
-The OculusRift class has two cameras: a convenience host camera controlling the overall head position & orientation, and an active eye camera which is updated by the SDK according to the tracked position & orientation. Their transformations are composed and can be queried via the `hmd::OculusRift` interfacte.
+The OculusRift class has two cameras: a convenience host camera controlling the overall head position & orientation, and an active eye camera which is updated by the SDK according to the tracked position & orientation. Their transformations are composed and can be queried via the `hmd::OculusRift` interface.
 
 
 In the draw() loop, iterate over each eye (enabling it) and draw your scene as follows:
