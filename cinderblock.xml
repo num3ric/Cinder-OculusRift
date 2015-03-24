@@ -3,7 +3,7 @@
 <block
 	name="OculusRift"
 	id="org.libcinder.oculusrift"
-	author="Eric Renaud-Houde & Paul Houx"
+	author="Eric Renaud-Houde &amp; Paul Houx"
 	license="GPL, Commercial"
 	summary="Oculus Rift SDK library for Cinder"
 	url="https://github.com/num3ric/Cinder-OculusRift"
