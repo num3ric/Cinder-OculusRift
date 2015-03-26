@@ -410,6 +410,20 @@ void OculusRift::detachFromWindow()
 	mWindow.reset();
 }
 
+void OculusRift::beginFrame() const
+{
+	if ( mFbo ) {
+		mFbo->bindFramebuffer();
+	}
+}
+
+void OculusRift::endFrame() const
+{
+	if ( mFbo ) {
+		mFbo->unbindFramebuffer();
+	}
+}
+
 void OculusRift::enableEye( int eyeIndex, bool applyMatrices )
 {
 	mProjectionCached = mViewMatrixCached = mInverseViewMatrixCached = false;
@@ -621,12 +635,9 @@ void OculusRift::startDrawFn( Renderer *renderer )
 		hmdToEyeViewOffset[1].x = 0; //  received from the loaded profile. 
 	}
 	ovrHmd_GetEyePoses( mHmd, 0, hmdToEyeViewOffset, mEyeRenderPose, &mTrackingState );
-
-	mFbo->bindFramebuffer();
 }
 
 void OculusRift::finishDrawFn( Renderer *renderer )
 {
-	mFbo->unbindFramebuffer();
 	mImpl->endFrame( renderer );
 }

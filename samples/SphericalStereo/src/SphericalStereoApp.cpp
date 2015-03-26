@@ -1,8 +1,6 @@
 #include "cinder/app/App.h"
 #include "cinder/app/RendererGl.h"
 #include "cinder/gl/gl.h"
-#include "cinder/gl/Batch.h"
-#include "cinder/gl/Context.h"
 #include "cinder/Log.h"
 #include "cinder/gl/VboMesh.h"
 #include "cinder/MayaCamUI.h"
@@ -86,6 +84,7 @@ void SphericalStereoApp::update()
 
 void SphericalStereoApp::draw()
 {
+	mRift.beginFrame();
 	gl::clear();
 
 	if( mRift.hasWindow( getWindow() ) ) {
@@ -113,6 +112,7 @@ void SphericalStereoApp::draw()
 			}
 		}
 	}
+	mRift.endFrame();
 }
 
 void SphericalStereoApp::fileDrop( FileDropEvent event )

@@ -40,9 +40,7 @@
 
 #include "cinder/app/RendererGl.h"
 #include "cinder/app/Window.h"
-#include "cinder/gl/Batch.h"
-#include "cinder/gl/Fbo.h"
-#include "cinder/gl/GlslProg.h"
+#include "cinder/gl/gl.h"
 #include "cinder/gl/Texture.h"
 #include "cinder/Camera.h"
 
@@ -174,6 +172,9 @@ public:
 	
 	bool	attachToWindow( const ci::app::WindowRef &window );
 	void	detachFromWindow();
+
+	void beginFrame() const;
+	void endFrame() const;
 
 	//! Set the base viewpoint position and orientation through the host camera.
 	void	setHostCamera( const ci::CameraPersp& camera ) { mHostCamera = camera; }

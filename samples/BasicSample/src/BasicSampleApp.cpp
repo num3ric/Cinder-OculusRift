@@ -85,8 +85,6 @@ void BasicSampleApp::update()
 
 void BasicSampleApp::draw()
 {
-	gl::clear( Color::gray( 0 ) );
-	
 	auto sceneDraw = [&]() {
 		{
 			gl::ScopedModelMatrix push;
@@ -101,6 +99,9 @@ void BasicSampleApp::draw()
 		gl::drawSphere( vec3( mLightWorldPosition ), 0.05f, 36 );
 	};
 	
+	mRift.beginFrame();
+	gl::clear( Color::gray( 0 ) );
+
 	if( mRift.hasWindow( getWindow() ) ) {
 		for( auto eye : mRift.getEyes() ) {
 			mRift.enableEye( eye );
@@ -128,6 +129,7 @@ void BasicSampleApp::draw()
 
 		sceneDraw();
 	}
+	mRift.endFrame();
 }
 
 void BasicSampleApp::resize()
