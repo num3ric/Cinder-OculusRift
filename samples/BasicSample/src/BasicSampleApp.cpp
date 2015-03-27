@@ -99,7 +99,7 @@ void BasicSampleApp::draw()
 		gl::drawSphere( vec3( mLightWorldPosition ), 0.05f, 36 );
 	};
 	
-	mRift.beginFrame();
+	mRift.bind();
 	gl::clear( Color::gray( 0 ) );
 
 	if( mRift.hasWindow( getWindow() ) ) {
@@ -129,7 +129,7 @@ void BasicSampleApp::draw()
 
 		sceneDraw();
 	}
-	mRift.endFrame();
+	mRift.unbind();
 }
 
 void BasicSampleApp::resize()

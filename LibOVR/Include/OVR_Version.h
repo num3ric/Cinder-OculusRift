@@ -33,3 +33,4 @@ limitations under the License.
 #define OVR_DK2_LATEST_FIRMWARE_MAJOR_VERSION 2
 #define OVR_DK2_LATEST_FIRMWARE_MINOR_VERSION 12
 #endif
+ 

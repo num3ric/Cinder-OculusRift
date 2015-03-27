@@ -69,7 +69,7 @@ void InstancedStereoApp::update()
 
 void InstancedStereoApp::draw()
 {
-	mRift.beginFrame();
+	mRift.bind();
 	gl::clear();
 	std::array<mat4, 6> worldToEyeClipMatrices;
 
@@ -102,7 +102,7 @@ void InstancedStereoApp::draw()
 		mShader->uniform( "uWorldToEyeClipMatrices", worldToEyeClipMatrices.data(), 6 );
 		mTeapot->drawInstanced( 2 );
 	}
-	mRift.endFrame();
+	mRift.unbind();
 }
 
 void InstancedStereoApp::keyDown( KeyEvent event )

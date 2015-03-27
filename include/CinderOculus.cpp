@@ -410,14 +410,14 @@ void OculusRift::detachFromWindow()
 	mWindow.reset();
 }
 
-void OculusRift::beginFrame() const
+void OculusRift::bind() const
 {
 	if ( mFbo ) {
 		mFbo->bindFramebuffer();
 	}
 }
 
-void OculusRift::endFrame() const
+void OculusRift::unbind() const
 {
 	if ( mFbo ) {
 		mFbo->unbindFramebuffer();
@@ -641,3 +641,4 @@ void OculusRift::finishDrawFn( Renderer *renderer )
 {
 	mImpl->endFrame( renderer );
 }
+ 
