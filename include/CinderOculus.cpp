@@ -641,4 +641,16 @@ void OculusRift::finishDrawFn( Renderer *renderer )
 {
 	mImpl->endFrame( renderer );
 }
+
+ScopedBind::ScopedBind( OculusRift& rift )
+: mRift( &rift )
+{
+	mRift->bind();
+}
+
+ScopedBind::~ScopedBind()
+{
+	mRift->unbind();
+}
+
  

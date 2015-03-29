@@ -174,7 +174,9 @@ public:
 	bool	attachToWindow( const ci::app::WindowRef &window );
 	void	detachFromWindow();
 
+	//! Binds the final framebuffer used by the OVR runtime.
 	void	bind() const;
+	//! Unbinds the framebuffer.
 	void	unbind() const;
 
 	//! Set the base viewpoint position and orientation through the host camera.
@@ -313,6 +315,14 @@ private:
 
 	friend class OculusRift::DirectModeImpl;
 	friend class OculusRift::ExtendedModeImpl;
+};
+
+struct ScopedBind
+{
+	ScopedBind( OculusRift& rift );
+	~ScopedBind();
+private:
+	OculusRift* mRift;
 };
 
 } // namespace hmd

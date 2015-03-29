@@ -84,7 +84,7 @@ void SphericalStereoApp::update()
 
 void SphericalStereoApp::draw()
 {
-	mRift.bind();
+	hmd::ScopedBind bind{ mRift };
 	gl::clear();
 
 	if( mRift.hasWindow( getWindow() ) ) {
@@ -112,7 +112,6 @@ void SphericalStereoApp::draw()
 			}
 		}
 	}
-	mRift.unbind();
 }
 
 void SphericalStereoApp::fileDrop( FileDropEvent event )

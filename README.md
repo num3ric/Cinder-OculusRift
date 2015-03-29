@@ -31,8 +31,10 @@ mRift.attachToWindow( app::getWindow() )
 The OculusRift class has two cameras: a convenience host camera controlling the overall head position & orientation, and an active eye camera which is updated by the SDK according to the tracked position & orientation. Their transformations are composed and can be queried via the `hmd::OculusRift` interface.
 
 
-In the draw() loop, iterate over each eye (enabling it) and draw your scene as follows:
+In the draw() loop, call bind to render the scene to the rift's framebuffer. Iterate over each eye (enabling it) and draw your scene as follows:
 ```
+hmd::ScopedBind bind{ mRift };
+...
 for( auto eye : mRift.getEyes() ) {
 		mRift.enableEye( eye );
 		drawScene();
@@ -41,7 +43,4 @@ for( auto eye : mRift.getEyes() ) {
 
 To avoid judder, make sure you hit **75fps**!
 
-TODO:
-* Add project template
-* Integrate and test Anttweakbar's GUI
-* Incorporate Oculus's VST plugin (work is already done)
+
