@@ -309,16 +309,16 @@ static const unsigned int kDefaulTrackingCaps =
 | ovrTrackingCap_Position;
 
 OculusRift::OculusRift()
-: mDistortionCaps( kDefaultDistortionCaps )
-, mHmdCaps( kDefaultHmdCaps )
-, mTrackingCaps( kDefaulTrackingCaps )
-, mWindow( nullptr )
-, mHmd( nullptr )
+: mWindow( nullptr )
 , mHeadScale( 1.0f )
 , mScreenPercentage( 1.0f )
+, mDistortionCaps( kDefaultDistortionCaps )
+, mHmdCaps( kDefaultHmdCaps )
+, mTrackingCaps( kDefaulTrackingCaps )
 , mHmdSettingsChanged( true )
 , mIsMonoscopic( false )
 , mUsePositionalTracking( true )
+, mHmd( nullptr )
 {
 	mHostCamera.setEyePoint( vec3( 0 ) );
 	//TODO: Fix default direction: invert z-axis.
