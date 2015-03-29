@@ -1,8 +1,6 @@
 #include "cinder/app/App.h"
 #include "cinder/app/RendererGl.h"
 #include "cinder/gl/gl.h"
-#include "cinder/gl/Batch.h"
-#include "cinder/gl/Context.h"
 #include "cinder/Log.h"
 #include "cinder/MayaCamUI.h"
 #include "cinder/Utilities.h"
@@ -71,6 +69,7 @@ void InstancedStereoApp::update()
 
 void InstancedStereoApp::draw()
 {
+	hmd::ScopedBind bind{ mRift };
 	gl::clear();
 	std::array<mat4, 6> worldToEyeClipMatrices;
 

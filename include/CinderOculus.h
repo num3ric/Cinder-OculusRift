@@ -40,10 +40,7 @@
 
 #include "cinder/app/RendererGl.h"
 #include "cinder/app/Window.h"
-#include "cinder/gl/Batch.h"
-#include "cinder/gl/Fbo.h"
-#include "cinder/gl/GlslProg.h"
-#include "cinder/gl/Texture.h"
+#include "cinder/gl/gl.h"
 #include "cinder/Camera.h"
 
 #include "OVR_Kernel.h"
@@ -148,12 +145,13 @@ inline ovrQuatf toOvr( const glm::quat& q )
 
 static const float kLeapToRiftScale = 0.01f;
 static const glm::vec3 kLeapToRiftEuler = glm::vec3( -0.5f * (float)M_PI, 0, (float)M_PI );
- 
+
 ////////////////////////////////////////////////////////////////////////
-	
+
 class OculusRift;
 
-class RiftManager : public ci::Noncopyable {
+class RiftManager : public ci::Noncopyable 
+{
 public:
 	~RiftManager();	
 	static void initialize();
@@ -167,13 +165,19 @@ private:
 
 typedef std::shared_ptr<OculusRift> OculusRiftRef;
 
-class OculusRift {
+class OculusRift 
+{
 public:
 	explicit OculusRift();
 	~OculusRift();
 	
 	bool	attachToWindow( const ci::app::WindowRef &window );
 	void	detachFromWindow();
+
+	//! Binds the final framebuffer used by the OVR runtime.
+	void	bind() const;
+	//! Unbinds the framebuffer.
+	void	unbind() const;
 
 	//! Set the base viewpoint position and orientation through the host camera.
 	void	setHostCamera( const ci::CameraPersp& camera ) { mHostCamera = camera; }
@@ -250,7 +254,8 @@ public:
 	bool isDesktopExtended() const;
 private:
 
-	class HmdEyeCamera : public ci::CameraPersp {
+	class HmdEyeCamera : public ci::CameraPersp 
+	{
 	protected:
 		void calcProjection() const override
 		{
@@ -312,6 +317,13 @@ private:
 	friend class OculusRift::ExtendedModeImpl;
 };
 
+struct ScopedBind
+{
+	ScopedBind( OculusRift& rift );
+	~ScopedBind();
+private:
+	OculusRift* mRift;
+};
 
-
-} // namespace rift
+} // namespace hmd
+ 
