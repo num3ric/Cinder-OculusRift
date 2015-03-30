@@ -1,7 +1,7 @@
 Cinder-OculusRift
 ==================
 
-This is (yet another) Oculus Rift block for Cinder, and a collaboration between [Paul Houx](https://github.com/paulhoux) and myself. *Thanks Paul for all the initial work!* It is up-to-date with the 0.4.4 version of the Oculus SDK, and the latest glNext Cinder version. It has been tested with the DK2 only. Both Windows & Mac OS X are supported, although Windows (with direct-mode enabled) is still the prefered platform.
+This is yet another Oculus Rift block for Cinder, and a collaboration between [Paul Houx](https://github.com/paulhoux) & myself. *Thanks Paul for all the initial work!* It currently uses version 0.4.4 of the Oculus SDK, and the latest glNext Cinder version. It has been tested with the DK2 only. Both Windows & Mac OS X are supported, although Windows (with direct-mode enabled) is still the prefered platform.
 
 Samples
 -----------------
@@ -15,7 +15,7 @@ Samples
 
 Usage
 -----------------
-First, initialize the rift manager in prepareSettings. *Also make sure to disable framerate and msaa 16*!)
+First, initialize the rift manager in prepareSettings. *Also make sure to disable both framerate and msaa 16.*
 
 ```
 hmd::RiftManager::initialize();
