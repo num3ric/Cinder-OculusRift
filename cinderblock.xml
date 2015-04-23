@@ -21,12 +21,7 @@
 		<staticLibrary>LibOVR/Lib/Windows/$(Platform)/$(Configuration)/VS2013/LibOVR.lib</staticLibrary>
 	</platform>
 	<platform os="macosx">
-		<platform config="debug">
-			<staticLibrary>LibOVR/Lib/Mac/Debug/libovr.a</staticLibrary>
-		</platform>
-		<platform config="release">
-			<staticLibrary>LibOVR/Lib/Mac/Release/libovr.a</staticLibrary>
-		</platform>
+		<framework>LibOVR/Lib/Mac/Release/LibOVR.framework</framework>
 	</platform>
 </block>
 </cinder>
