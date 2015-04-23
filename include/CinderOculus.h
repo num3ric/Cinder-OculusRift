@@ -43,9 +43,8 @@
 #include "cinder/gl/gl.h"
 #include "cinder/Camera.h"
 
-#include "OVR_Kernel.h"
+#include <OVR_CAPI_0_5_0.h>
 #include "OVR_Version.h"
-#include "OVR_CAPI.h"
 #include "OVR_CAPI_GL.h"
 
 #include <map>

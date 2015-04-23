@@ -41,7 +41,8 @@
 #include "cinder/gl/VboMesh.h"
 #include "cinder/Utilities.h"
 
-#include "Kernel/OVR_Threads.h"
+//#include "OVR_Kernel.h"
+//#include "Kernel/OVR_Threads.h"
 
 using namespace ci;
 using namespace ci::app;
@@ -60,13 +61,17 @@ void RiftManager::initialize()
 
 RiftManager::RiftManager()
 {
-	OVR::Thread::SetCurrentThreadName( "CiOculusMain" );
-	OVR::Thread::SetCurrentPriority( OVR::Thread::HighestPriority );
-#if defined( OVR_OS_WIN32 )
-	if( OVR::Thread::GetCPUCount() >= 4 ) {
-		SetPriorityClass( GetCurrentProcess(), HIGH_PRIORITY_CLASS );
-	}
-#endif
+	// Disabled after update to SDK 0.5.0.1 to prevent including LibOVRKernel with this block.
+	// Are these thread settings still desirable?
+
+//	OVR::Thread::SetCurrentThreadName( "CiOculusMain" );
+//	OVR::Thread::SetCurrentPriority( OVR::Thread::HighestPriority );
+//#if defined( OVR_OS_WIN32 )
+//	if( OVR::Thread::GetCPUCount() >= 4 ) {
+//		SetPriorityClass( GetCurrentProcess(), HIGH_PRIORITY_CLASS );
+//	}
+//#endif
+
 	ovrBool result = ovr_Initialize();
 	if( ! result ) {
 		throw std::runtime_error( "Failed to initialize Oculus VR." );
@@ -272,7 +277,7 @@ private:
 		ovrFovPort eyeFov[2] = { mRift->mHmd->DefaultEyeFov[0], mRift->mHmd->DefaultEyeFov[1] };
 		for( ovrEyeType eye = ovrEye_Left; eye < ovrEye_Count; eye = static_cast<ovrEyeType>( eye + 1 ) ) {
 			ovrDistortionMesh meshData;
-			ovrHmd_CreateDistortionMesh( mRift->mHmd, (ovrEyeType)eye, eyeFov[eye], ovrDistortionCap_Chromatic | ovrDistortionCap_TimeWarp, &meshData );
+			ovrHmd_CreateDistortionMesh( mRift->mHmd, eye, eyeFov[eye], ovrDistortionCap_TimeWarp, &meshData );
 
 			gl::VboMeshRef mesh = gl::VboMesh::create( meshData.VertexCount, GL_TRIANGLES, { layout }, meshData.IndexCount, GL_UNSIGNED_SHORT );
 			gl::VboRef buffer = gl::Vbo::create( GL_ARRAY_BUFFER, sizeof(ovrDistortionVertex)* meshData.VertexCount, meshData.pVertexData, GL_STATIC_DRAW );
@@ -293,8 +298,7 @@ private:
 };
 
 static const unsigned int kDefaultDistortionCaps =
-  ovrDistortionCap_Chromatic
-| ovrDistortionCap_Vignette
+  ovrDistortionCap_Vignette
 | ovrDistortionCap_TimeWarp
 | ovrDistortionCap_Overdrive
 | ovrDistortionCap_HqDistortion;
