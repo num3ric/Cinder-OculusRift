@@ -7,6 +7,7 @@
 #include "cinder/Utilities.h"
 #include "cinder/GeomIo.h"
 #include "cinder/gl/Shader.h"
+#include "cinder/Text.h"
 
 #include "CinderOculus.h"
 
@@ -101,6 +102,7 @@ void SphericalStereoApp::draw()
 				gl::ScopedMatrices push;
 				gl::setMatricesWindow( size.x / 2, size.y );
 				vec3 latencies = mRift.getLatencies();
+				
 				stringstream ss;
 				ss << mPanos.at( mPanoIndex ).mName << std::endl;
 				ss << " " << std::endl;
@@ -108,7 +110,9 @@ void SphericalStereoApp::draw()
 				ss << "Ren: " << latencies.x << std::endl;
 				ss << "TWrp: " << latencies.y << std::endl;
 				ss << "PostPresent: " << latencies.z << std::endl;
-				gl::drawString( ss.str(), vec2( size.x / 3, size.y / 2 ), Color::white(), Font( "Arial", 20.0f ) );
+				
+				auto tbox = TextBox().text( ss.str() ).font( Font( "Arial", 20.0f ) ).color( Color::white() ).backgroundColor( Color::black() );
+				gl::draw( gl::Texture2d::create( tbox.render() ), vec2( size.x / 3, size.y / 2 ) );
 			}
 		}
 	}
