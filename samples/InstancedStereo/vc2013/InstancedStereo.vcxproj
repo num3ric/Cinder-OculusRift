@@ -1,3 +1,4 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|x64">
@@ -45,7 +46,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>..\include;"..\..\..\..\..\include";"..\..\..\..\..\boost";..\..\..\include;..\..\..\LibOVR\Include;..\..\..\LibOVR\Src</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\include;"..\..\..\..\..\include";"..\..\..\..\..\boost";..\..\..\include;..\..\..\LibOVR\Include;</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;NOMINMAX;_WIN32_WINNT=0x0502;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
@@ -58,7 +59,7 @@
       <AdditionalIncludeDirectories>"..\..\..\..\..\include";..\include</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Link>
-      <AdditionalDependencies>cinder-$(PlatformToolset)_d.lib;OpenGL32.lib;%(AdditionalDependencies);winmm.lib;..\..\..\LibOVR\Lib\$(PlatformTarget)\VS2013\libovrd.lib</AdditionalDependencies>
+      <AdditionalDependencies>cinder-$(PlatformToolset)_d.lib;OpenGL32.lib;%(AdditionalDependencies);..\..\..\LibOVR\Lib\Windows\$(PlatformTarget)\$(Configuration)\VS2013\LibOVR.lib;</AdditionalDependencies>
       <AdditionalLibraryDirectories>"..\..\..\..\..\lib\msw\$(PlatformTarget)"</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
@@ -69,7 +70,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>..\include;"..\..\..\..\..\include";"..\..\..\..\..\boost";..\..\..\include;..\..\..\LibOVR\Include;..\..\..\LibOVR\Src</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\include;"..\..\..\..\..\include";"..\..\..\..\..\boost";..\..\..\include;..\..\..\LibOVR\Include;</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;NOMINMAX;_WIN32_WINNT=0x0502;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <PrecompiledHeader />
@@ -84,7 +85,7 @@
       <AdditionalIncludeDirectories>"..\..\..\..\..\include";..\include</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Link>
-      <AdditionalDependencies>cinder-$(PlatformToolset).lib;OpenGL32.lib;%(AdditionalDependencies);winmm.lib;..\..\..\LibOVR\Lib\$(PlatformTarget)\VS2013\libovr.lib</AdditionalDependencies>
+      <AdditionalDependencies>cinder-$(PlatformToolset).lib;OpenGL32.lib;%(AdditionalDependencies);..\..\..\LibOVR\Lib\Windows\$(PlatformTarget)\$(Configuration)\VS2013\LibOVR.lib;</AdditionalDependencies>
       <AdditionalLibraryDirectories>"..\..\..\..\..\lib\msw\$(PlatformTarget)"</AdditionalLibraryDirectories>
       <GenerateDebugInformation>false</GenerateDebugInformation>
       <GenerateMapFile>true</GenerateMapFile>
