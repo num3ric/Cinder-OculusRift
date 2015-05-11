@@ -4,7 +4,7 @@
 #include "cinder/gl/Batch.h"
 #include "cinder/gl/Context.h"
 #include "cinder/Log.h"
-#include "cinder/MayaCamUI.h"
+#include "cinder/CameraUi.h"
 #include "cinder/Utilities.h"
 
 #include "CinderOculus.h"
@@ -21,13 +21,12 @@ public:
 	void draw() override;
 	void resize() override;
 
-	void mouseDown( MouseEvent event ) override;
-	void mouseDrag( MouseEvent event ) override;
 	void keyDown( KeyEvent event ) override;
 private:
 	double			mTime;
 
-	MayaCamUI		mMayaCam;
+	CameraPersp			mCamera;
+	CameraUi			mCameraUi;
 	hmd::OculusRift		mRift;
 
 	gl::GlslProgRef	mShader;
@@ -47,7 +46,7 @@ BasicSampleApp::BasicSampleApp()
 			app::setWindowSize( mRift.getNativeWindowResolution() );
 		CameraPersp host;
 		host.setEyePoint( mViewerPosition );
-		host.setCenterOfInterestPoint( vec3( 0 ) );
+		host.lookAt( vec3( 0 ) );
 		mRift.setHostCamera( host );
 		mRift.setScreenPercentage( 1.25f );
 	}
@@ -62,11 +61,10 @@ BasicSampleApp::BasicSampleApp()
 	mTeapot = gl::Batch::create( geom::Teapot().subdivisions( 12 ), mShader );
 
 	// Setup camera for the debug (main) window.
-	CameraPersp cam;
-	cam.setEyePoint( vec3( 0, 2, 5 ) );
-	cam.setCenterOfInterestPoint( vec3( 0 ) );
-	cam.setFov( 45.0f );
-	mMayaCam.setCurrentCam( cam );	
+	mCamera.setEyePoint( vec3( 0, 2, 5 ) );
+	mCamera.lookAt( vec3( 0 ) );
+	mCamera.setFov( 45.0f );
+	mCameraUi.connect( app::getWindow() );
 
 	// Generally preferable to enable vsync to prevent tearing in the headset display
 	gl::enableVerticalSync();
@@ -121,9 +119,9 @@ void BasicSampleApp::draw()
 		}
 	} else {
 		gl::viewport( getWindowSize() );
-		gl::setMatrices( mMayaCam.getCamera() );
+		gl::setMatrices( mCamera );
 		
-		const mat4& view = mMayaCam.getCamera().getViewMatrix();
+		const mat4& view = mCamera.getViewMatrix();
 		mShader->uniform( "uLightViewPosition", view * mLightWorldPosition );
 		mShader->uniform( "uSkyDirection", view * vec4( 0, 1, 0, 0 ) );
 
@@ -133,19 +131,7 @@ void BasicSampleApp::draw()
 
 void BasicSampleApp::resize()
 {
-	auto cam = mMayaCam.getCamera();
-	cam.setAspectRatio( getWindowAspectRatio() );
-	mMayaCam.setCurrentCam( cam );
-}
-
-void BasicSampleApp::mouseDown( MouseEvent event )
-{
-	mMayaCam.mouseDown( event.getPos() );
-}
-
-void BasicSampleApp::mouseDrag( MouseEvent event )
-{
-	mMayaCam.mouseDrag( event.getPos(), event.isLeftDown(), event.isMiddleDown(), event.isRightDown() );
+	mCamera.setAspectRatio( getWindowAspectRatio() );
 }
 
 void BasicSampleApp::keyDown( KeyEvent event )

@@ -2,7 +2,6 @@
 #include "cinder/app/RendererGl.h"
 #include "cinder/gl/gl.h"
 #include "cinder/Log.h"
-#include "cinder/MayaCamUI.h"
 #include "cinder/Utilities.h"
 
 #include "CinderOculus.h"
@@ -40,7 +39,7 @@ InstancedStereoApp::InstancedStereoApp()
 			app::setWindowSize( mRift.getNativeWindowResolution() );
 		CameraPersp host;
 		host.setEyePoint( vec3( 0, 0, 1 ) );
-		host.setCenterOfInterestPoint( vec3( 0 ) );
+		host.lookAt( vec3( 0 ) );
 		mRift.setHostCamera( host );
 		mRift.setScreenPercentage( 1.25f );
 	}
@@ -99,7 +98,7 @@ void InstancedStereoApp::draw()
 		auto normalMatrix = glm::transpose( glm::inverse( gl::getModelMatrix() ) );
 		worldToEyeClipMatrices.at( 2 ) = worldToEyeClipMatrices.at( 5 ) = normalMatrix;
 		mShader->uniform( "uLightPosition", mLightWorldPosition );
-		mShader->uniform( "uWorldToEyeClipMatrices", worldToEyeClipMatrices.data(), 6 );
+		mShader->uniform( "uWorldToEyeClipMatrices[0]", worldToEyeClipMatrices.data(), 6 );
 		mTeapot->drawInstanced( 2 );
 	}
 }

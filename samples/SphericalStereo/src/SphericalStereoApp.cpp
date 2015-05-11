@@ -3,7 +3,6 @@
 #include "cinder/gl/gl.h"
 #include "cinder/Log.h"
 #include "cinder/gl/VboMesh.h"
-#include "cinder/MayaCamUI.h"
 #include "cinder/Utilities.h"
 #include "cinder/GeomIo.h"
 #include "cinder/gl/Shader.h"
