@@ -162,8 +162,6 @@ private:
 	friend class OculusRift;
 };
 
-typedef std::shared_ptr<OculusRift> OculusRiftRef;
-
 class OculusRift 
 {
 public:
