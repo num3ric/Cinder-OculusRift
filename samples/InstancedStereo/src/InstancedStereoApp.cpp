@@ -98,7 +98,7 @@ void InstancedStereoApp::draw()
 		auto normalMatrix = glm::transpose( glm::inverse( gl::getModelMatrix() ) );
 		worldToEyeClipMatrices.at( 2 ) = worldToEyeClipMatrices.at( 5 ) = normalMatrix;
 		mShader->uniform( "uLightPosition", mLightWorldPosition );
-		mShader->uniform( "uWorldToEyeClipMatrices[0]", worldToEyeClipMatrices.data(), 6 );
+		mShader->uniform( "uWorldToEyeClipMatrices", worldToEyeClipMatrices.data(), 6 );
 		mTeapot->drawInstanced( 2 );
 	}
 }

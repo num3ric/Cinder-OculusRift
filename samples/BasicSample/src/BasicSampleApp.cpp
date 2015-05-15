@@ -38,6 +38,7 @@ private:
 
 BasicSampleApp::BasicSampleApp()
 : mViewerPosition{ vec3( 0, 0, 1 ) }
+, mCameraUi( &mCamera, app::getWindow() )
 {
 	if( mRift.attachToWindow( getWindow() ) ) {
 		if( mRift.isDesktopExtended() )
@@ -64,7 +65,6 @@ BasicSampleApp::BasicSampleApp()
 	mCamera.setEyePoint( vec3( 0, 2, 5 ) );
 	mCamera.lookAt( vec3( 0 ) );
 	mCamera.setFov( 45.0f );
-	mCameraUi.connect( app::getWindow() );
 
 	// Generally preferable to enable vsync to prevent tearing in the headset display
 	gl::enableVerticalSync();
@@ -84,7 +84,7 @@ void BasicSampleApp::update()
 void BasicSampleApp::draw()
 {
 	hmd::ScopedBind bind{ mRift };
-	gl::clear( Color::gray( 0 ) );
+	gl::clear( Color( 0.02, 0.02, 0.1 ) );
 
 	auto sceneDraw = [&]() {
 		{
