@@ -268,7 +268,6 @@ private:
 	static bool	isValid( const ci::app::WindowRef& window );
 	
 	void	updateHmdSettings();
-	void	dismissHSW();
 	void	initializeFrameBuffer();
 	void	startDrawFn( ci::app::Renderer *renderer );
 	void	finishDrawFn( ci::app::Renderer *renderer );
@@ -288,8 +287,9 @@ private:
 
 	float				mHeadScale;
 	float				mScreenPercentage;
-	unsigned int		mDistortionCaps, mHmdCaps, mTrackingCaps;
+	unsigned int		mHmdCaps, mTrackingCaps;
 	bool				mHmdSettingsChanged;
+	bool				mIsMirrrored;
 	bool				mIsMonoscopic;
 	bool				mUsePositionalTracking;
 

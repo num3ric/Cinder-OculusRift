@@ -24,6 +24,9 @@
     <ClInclude Include="..\..\..\Include\OVR_CAPI_Util.h">
       <Filter>Include</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\Include\OVR_ErrorCode.h">
+      <Filter>Include</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\..\Src\OVR_StereoProjection.h" />
   </ItemGroup>
   <ItemGroup>

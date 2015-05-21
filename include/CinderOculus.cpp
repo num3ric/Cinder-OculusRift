@@ -41,6 +41,9 @@
 #include "cinder/gl/VboMesh.h"
 #include "cinder/Utilities.h"
 
+// Include the Oculus SDK
+#include "OVR_CAPI_GL.h"
+
 //#include "OVR_Kernel.h"
 //#include "Kernel/OVR_Threads.h"
 
@@ -297,12 +300,6 @@ private:
 	ci::gl::BatchRef	mBatch[ovrEye_Count];
 };
 
-static const unsigned int kDefaultDistortionCaps =
-  ovrDistortionCap_Vignette
-| ovrDistortionCap_TimeWarp
-| ovrDistortionCap_Overdrive
-| ovrDistortionCap_HqDistortion;
-
 static const unsigned int kDefaultHmdCaps =
   ovrHmdCap_LowPersistence
 | ovrHmdCap_DynamicPrediction;
@@ -316,10 +313,10 @@ OculusRift::OculusRift()
 : mWindow( nullptr )
 , mHeadScale( 1.0f )
 , mScreenPercentage( 1.0f )
-, mDistortionCaps( kDefaultDistortionCaps )
 , mHmdCaps( kDefaultHmdCaps )
 , mTrackingCaps( kDefaulTrackingCaps )
 , mHmdSettingsChanged( true )
+, mIsMirrrored( true )
 , mIsMonoscopic( false )
 , mUsePositionalTracking( true )
 , mHmd( nullptr )
@@ -367,6 +364,9 @@ bool OculusRift::attachToWindow( const ci::app::WindowRef& window )
 	
 	if( ! mImpl->initialize( window ) )
 		return false;
+
+	// Turn off vsync to let the compositor do its magic
+	wglSwapIntervalEXT( 0 );
 	
 	// Override the window's startDraw() and finishDraw() methods, so we can inject our own code.
 	RendererGlRef rendererGl = std::dynamic_pointer_cast<RendererGl>( window->getRenderer() );
@@ -550,17 +550,15 @@ bool OculusRift::isTracked() const
 
 bool OculusRift::isMirrored() const
 {
-	return ! ( mHmdCaps & ovrHmdCap_NoMirrorToWindow );
+	return mIsMirrrored;
 }
 
 void OculusRift::enableMirrored( bool enabled )
 {
-	if( enabled ) {
-		mHmdCaps &= ~ovrHmdCap_NoMirrorToWindow;
-	} else {
-		mHmdCaps |= ovrHmdCap_NoMirrorToWindow;
+	if( mIsMirrrored != enabled ) {
+		mIsMirrrored = enabled;
+		mHmdSettingsChanged = true;
 	}
-	mHmdSettingsChanged = true;
 }
 
 void OculusRift::setHeadScale( float scale )
@@ -579,15 +577,6 @@ void OculusRift::updateHmdSettings()
 	mHmdSettingsChanged = false;
 }
 
-void OculusRift::dismissHSW()
-{
-	ovrHSWDisplayState hswDisplayState;
-	ovrHmd_GetHSWDisplayState( mHmd, &hswDisplayState );
-	if( hswDisplayState.Displayed ) {
-		ovrHmd_DismissHSWDisplay( mHmd );
-	}
-}
-
 void OculusRift::initializeFrameBuffer()
 {
 	// Determine the size and create the buffer.
@@ -597,11 +586,20 @@ void OculusRift::initializeFrameBuffer()
 	int h = math<int>::max( left.h, right.h );
 	
 	if( ! mFbo || mFbo->getWidth() != w || mFbo->getHeight() != h ) {
+
+
+		// Create mirror texture and an FBO used to copy mirror texture to back buffer
+		ovrGLTexture* mirrorTexture;
+		ovrHmd_CreateMirrorTextureGL( mHmd, GL_RGBA, w, h, (ovrTexture**)&mirrorTexture );
+		// Configure the mirror read buffer
+		GLuint mirrorFBO = 0;
+		gl::TextureRef mirror = gl::Texture::create( GL_TEXTURE_2D, mirrorTexture->OGL.TexId, w, h, false );
 		// Specify the buffer format.
 		gl::Fbo::Format fmt;
+		fmt.attachment( GL_COLOR_ATTACHMENT0, mirror );
 		fmt.enableDepthBuffer();
 		fmt.setSamples( 0 ); // TODO: support multi-sampling
-		mFbo = gl::Fbo::create( w, h, fmt );
+		mFbo = gl::Fbo::create( w, h, fmt )
 		
 		// The actual size may be different due to hardware limits.
 		w = mFbo->getWidth();
@@ -623,14 +621,11 @@ void OculusRift::initializeFrameBuffer()
 void OculusRift::startDrawFn( Renderer *renderer )
 {
 	renderer->makeCurrentContext();
-	dismissHSW();
 	initializeFrameBuffer();
 
 	if( mHmdSettingsChanged ) {
 		updateHmdSettings();
 	}
-
-	mImpl->beginFrame();
 
 	// Update eye render poses.
 	ovrVector3f hmdToEyeViewOffset[2] = { mEyeRenderDesc[0].HmdToEyeViewOffset, mEyeRenderDesc[1].HmdToEyeViewOffset };
@@ -643,7 +638,8 @@ void OculusRift::startDrawFn( Renderer *renderer )
 
 void OculusRift::finishDrawFn( Renderer *renderer )
 {
-	mImpl->endFrame( renderer );
+	ovrLayerHeader* layers = &layer.Header;
+	ovrResult result = ovrHmd_SubmitFrame( mHmd, ci::app::getElapsedFrames(), nullptr, &layers, 1 );
 }
 
 ScopedBind::ScopedBind( OculusRift& rift )
