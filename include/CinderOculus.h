@@ -43,7 +43,7 @@
 #include "cinder/gl/gl.h"
 #include "cinder/Camera.h"
 
-#include "OVR_CAPI_0_5_0.h"
+#include "OVR_CAPI_0_6_0.h"
 #include "OVR_Version.h"
 #include "OVR_CAPI_GL.h"
 
@@ -168,7 +168,7 @@ public:
 	explicit OculusRift();
 	~OculusRift();
 	
-	bool	attachToWindow( const ci::app::WindowRef &window );
+	bool	initialize( const ci::app::WindowRef &window );
 	void	detachFromWindow();
 
 	//! Binds the final framebuffer used by the OVR runtime.
@@ -208,6 +208,10 @@ public:
 	 * It is best to use a value >1: downscaling a higher resolution
 	 * render helps minimize aliasing and increases detail. */
 	void	setScreenPercentage( float sp );
+
+	float	getMirrorPercentage() const { return mMirrorPercentage; }
+
+	void	setMirrorPercentage( float sp );
 
 	//! Returns true if the render is also mirrored on screen (direct mode).
 	bool	isMirrored() const;
@@ -280,15 +284,16 @@ private:
 	mutable bool		mInverseViewMatrixCached = false;
 
 	ci::app::WindowRef	mWindow;
-	ci::gl::FboRef		mFbo;
 
 	HmdEyeCamera		mHmdEyeCamera;
 	ci::CameraPersp		mHostCamera;
 
 	float				mHeadScale;
 	float				mScreenPercentage;
+	float				mMirrorPercentage;
 	unsigned int		mHmdCaps, mTrackingCaps;
 	bool				mHmdSettingsChanged;
+	bool				mIsExtended;
 	bool				mIsMirrrored;
 	bool				mIsMonoscopic;
 	bool				mUsePositionalTracking;
@@ -304,14 +309,8 @@ private:
 	ovrTrackingState	mTrackingState;
 	ovrEyeType			mEye;
 
-	class ModeImpl;
-	class DirectModeImpl;
-	class ExtendedModeImpl;
-
-	std::unique_ptr<ModeImpl> mImpl;
-
-	friend class OculusRift::DirectModeImpl;
-	friend class OculusRift::ExtendedModeImpl;
+	std::array<ci::gl::FboRef,2>		mSwapFbos;
+	std::array<ci::gl::Texture2dRef,2>	mMirrorTextures;
 };
 
 struct ScopedBind

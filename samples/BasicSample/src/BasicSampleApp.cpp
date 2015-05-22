@@ -40,11 +40,7 @@ BasicSampleApp::BasicSampleApp()
 : mViewerPosition{ vec3( 0, 0, 1 ) }
 , mCameraUi( &mCamera, app::getWindow() )
 {
-	if( mRift.attachToWindow( getWindow() ) ) {
-		if( mRift.isDesktopExtended() )
-			app::setFullScreen();
-		else
-			app::setWindowSize( mRift.getNativeWindowResolution() );
+	if( mRift.initialize( getWindow() ) ) {
 		CameraPersp host;
 		host.setEyePoint( mViewerPosition );
 		host.lookAt( vec3( 0 ) );
@@ -66,8 +62,7 @@ BasicSampleApp::BasicSampleApp()
 	mCamera.lookAt( vec3( 0 ) );
 	mCamera.setFov( 45.0f );
 
-	// Generally preferable to enable vsync to prevent tearing in the headset display
-	gl::enableVerticalSync();
+	//gl::enableVerticalSync();
 	gl::enableDepthRead();
 	gl::enableDepthWrite();
 	gl::color( Color::white() );
