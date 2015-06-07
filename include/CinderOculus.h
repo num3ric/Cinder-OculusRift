@@ -44,7 +44,7 @@
 #include "cinder/Camera.h"
 
 #include "OVR_CAPI_0_6_0.h"
-#include "OVR_Version.h"
+//#include "OVR_Version.h"
 #include "OVR_CAPI_GL.h"
 
 #include <map>
@@ -147,6 +147,99 @@ static const glm::vec3 kLeapToRiftEuler = glm::vec3( -0.5f * (float)M_PI, 0, (fl
 
 ////////////////////////////////////////////////////////////////////////
 
+
+// TODO: Cinder gl::Fbos currently don't allow for changing the texture attachments at every frame.
+// We thus use the provided sample implementation by Oculus.
+
+//---------------------------------------------------------------------------------------
+struct DepthBuffer
+{
+	GLuint        texId;
+
+	DepthBuffer( glm::ivec2 size, int sampleCount )
+	{
+		CI_ASSERT( sampleCount <= 1 ); // The code doesn't currently handle MSAA textures.
+
+		glGenTextures( 1, &texId );
+		glBindTexture( GL_TEXTURE_2D, texId );
+		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
+		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
+		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
+		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
+
+		GLenum internalFormat = GL_DEPTH_COMPONENT24;
+		GLenum type = GL_UNSIGNED_INT;
+		//if( GLE_ARB_depth_buffer_float )
+		//{
+		//	internalFormat = GL_DEPTH_COMPONENT32F;
+		//	type = GL_FLOAT;
+		//}
+
+		glTexImage2D( GL_TEXTURE_2D, 0, internalFormat, size.x, size.y, 0, GL_DEPTH_COMPONENT, type, NULL );
+	}
+};
+
+//--------------------------------------------------------------------------
+struct TextureBuffer
+{
+	ovrSwapTextureSet* TextureSet;
+	GLuint        texId;
+	GLuint        fboId;
+	glm::ivec2         texSize;
+
+	TextureBuffer( ovrHmd hmd, glm::ivec2 size, int mipLevels, unsigned char * data, int sampleCount )
+	{
+		CI_ASSERT( sampleCount <= 1 ); // The code doesn't currently handle MSAA textures.
+		texSize = size;
+
+		// This texture isn't necessarily going to be a rendertarget, but it usually is.
+		CI_ASSERT( hmd ); // No HMD? A little odd.
+		CI_ASSERT( sampleCount == 1 ); // ovrHmd_CreateSwapTextureSetD3D11 doesn't support MSAA.
+
+		auto result = ovrHmd_CreateSwapTextureSetGL( hmd, GL_RGBA, size.x, size.x, &TextureSet );
+		CI_ASSERT( result == ovrSuccess );
+
+		for( int i = 0; i < TextureSet->TextureCount; ++i ) {
+			ovrGLTexture* tex = (ovrGLTexture*)&TextureSet->Textures[i];
+			glBindTexture( GL_TEXTURE_2D, tex->OGL.TexId );
+			glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
+			glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
+			glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
+			glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
+		}
+
+		if( mipLevels > 1 ) {
+			glGenerateMipmap( GL_TEXTURE_2D );
+		}
+
+		glGenFramebuffers( 1, &fboId );
+	}
+
+	glm::ivec2 getSize() const
+	{
+		return texSize;
+	}
+
+	void setAndClearRenderSurface( DepthBuffer * dbuffer )
+	{
+		ovrGLTexture* tex = (ovrGLTexture*)&TextureSet->Textures[TextureSet->CurrentIndex];
+
+		glBindFramebuffer( GL_FRAMEBUFFER, fboId );
+		glFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex->OGL.TexId, 0 );
+		glFramebufferTexture2D( GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, dbuffer->texId, 0 );
+
+		glViewport( 0, 0, texSize.x, texSize.y );
+		glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
+	}
+
+	void unsetRenderSurface()
+	{
+		glBindFramebuffer( GL_FRAMEBUFFER, fboId );
+		glFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, 0, 0 );
+		glFramebufferTexture2D( GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, 0, 0 );
+	}
+};
+
 class OculusRift;
 
 class RiftManager : public ci::Noncopyable 
@@ -235,11 +328,11 @@ public:
 	void	setHeadScale( float scale );
 
 	//! Returns the native window position of the HMD.
-	glm::ivec2	getNativeWindowPos() const { return fromOvr( mHmd->WindowsPos ); }
+	//glm::ivec2	getNativeWindowPos() const { return fromOvr( mHmd->WindowsPos ); }
 	//! Returns the native resolution of the HMD.
 	glm::ivec2	getNativeWindowResolution() const { return fromOvr( mHmd->Resolution ); }
 	//! Returns the size of the render target fbo (used by both eyes).
-	glm::ivec2	getFboSize() const { return mFbo->getSize(); }
+	glm::ivec2	getFboSize() const { return mRenderBuffer->getSize(); }
 
 	//! Returns the composed host and (active) eye view matrix.
 	glm::mat4	getViewMatrix() const;
@@ -248,7 +341,7 @@ public:
 	//! Returns the composed host and (active) eye projection matrix.
 	glm::mat4	getProjectionMatrix() const;
 	//! Returns the active eye viewport.
-	std::pair<glm::ivec2, glm::ivec2> getEyeViewport() const { return fromOvr( mEyeTexture[mEye].OGL.Header.RenderViewport ); }
+	std::pair<glm::ivec2, glm::ivec2> getEyeViewport() const { return fromOvr( mLayer.Viewport[mEye] ); }
 
 	bool hasWindow( const ci::app::WindowRef &window ) const { return mWindow == window; }
 //	bool isCaptured() const;
@@ -271,8 +364,11 @@ private:
 	
 	static bool	isValid( const ci::app::WindowRef& window );
 	
-	void	updateHmdSettings();
 	void	initializeFrameBuffer();
+	void	createMirrorTexture();
+
+	void	updateHmdSettings();
+	
 	void	startDrawFn( ci::app::Renderer *renderer );
 	void	finishDrawFn( ci::app::Renderer *renderer );
 	
@@ -300,17 +396,20 @@ private:
 
 	// Oculus Rift SDK
 	ovrHmd				mHmd;
+	ovrEyeType			mEye;
 	ovrEyeRenderDesc	mEyeRenderDesc[ovrEye_Count];
 	ovrPosef			mEyeRenderPose[ovrEye_Count];
 	ovrVector3f			mEyeViewOffset[ovrEye_Count];
-	ovrRecti			mEyeViewport[ovrEye_Count];
-	ovrGLTexture		mEyeTexture[ovrEye_Count];
-	ovrVector2f			mUVScaleOffset[ovrEye_Count][2];
-	ovrTrackingState	mTrackingState;
-	ovrEyeType			mEye;
 
-	std::array<ci::gl::FboRef,2>		mSwapFbos;
-	std::array<ci::gl::Texture2dRef,2>	mMirrorTextures;
+	ovrTrackingState	mTrackingState;
+
+	ovrLayerEyeFov		mLayer;
+
+	std::unique_ptr<TextureBuffer>	mRenderBuffer;
+	std::unique_ptr<DepthBuffer>	mDepthBuffer;
+
+	ovrGLTexture*					mMirrorTexture;
+	ci::gl::FboRef					mMirrorFbo;
 };
 
 struct ScopedBind

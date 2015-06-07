@@ -41,9 +41,6 @@
 #include "cinder/gl/VboMesh.h"
 #include "cinder/Utilities.h"
 
-//#include "OVR_Kernel.h"
-//#include "Kernel/OVR_Threads.h"
-
 using namespace ci;
 using namespace ci::app;
 using namespace hmd;
@@ -86,6 +83,7 @@ OculusRift::OculusRift()
 : mWindow( nullptr )
 , mHeadScale( 1.0f )
 , mScreenPercentage( 1.0f )
+, mMirrorPercentage( 0.5f )
 , mHmdCaps( kDefaultHmdCaps )
 , mTrackingCaps( kDefaulTrackingCaps )
 , mHmdSettingsChanged( true )
@@ -114,6 +112,10 @@ OculusRift::OculusRift()
 OculusRift::~OculusRift()
 {
 	detachFromWindow();
+
+	mMirrorFbo.reset();
+	ovrHmd_DestroyMirrorTexture( mHmd, (ovrTexture*)mMirrorTexture );
+	ovrHmd_DestroySwapTextureSet( mHmd, mRenderBuffer->TextureSet );
 
 	if( mHmd )
 		ovrHmd_Destroy( mHmd );
@@ -164,17 +166,72 @@ bool OculusRift::initialize( const ci::app::WindowRef& window )
 	return true;
 }
 
+void OculusRift::createMirrorTexture()
+{
+	ivec2 ws = mMirrorPercentage * vec2( mHmd->Resolution.w, mHmd->Resolution.h );
+
+	ovrHmd_CreateMirrorTextureGL( mHmd, GL_RGBA, ws.x, ws.y, (ovrTexture**)&mMirrorTexture );
+	// Configure the mirror read buffer
+	GLuint mirrorFBO = 0;
+	gl::TextureRef mirror = gl::Texture::create( GL_TEXTURE_2D, mMirrorTexture->OGL.TexId, ws.x, ws.y, false );
+	// Specify the buffer format.
+	gl::Fbo::Format fmt;
+	fmt.attachment( GL_COLOR_ATTACHMENT0, mirror );
+	fmt.enableDepthBuffer();
+	fmt.setSamples( 0 ); // TODO: support multi-sampling
+	mMirrorFbo = gl::Fbo::create( ws.x, ws.y, fmt );
+}
+
+void OculusRift::initializeFrameBuffer()
+{
+	// Determine the size and create the buffer.
+	ovrSizei left = ovrHmd_GetFovTextureSize( mHmd, ovrEye_Left, mHmd->DefaultEyeFov[ovrEye_Left], mScreenPercentage );
+	ovrSizei right = ovrHmd_GetFovTextureSize( mHmd, ovrEye_Right, mHmd->DefaultEyeFov[ovrEye_Right], mScreenPercentage );
+	ivec2 size;
+	size.x = left.w + right.w;
+	size.y = math<int>::max( left.h, right.h );
+
+	if( ! mRenderBuffer || mRenderBuffer->getSize() != size ) {
+		
+		//Create render buffer (with depth)
+		mRenderBuffer = std::unique_ptr<TextureBuffer>( new TextureBuffer( mHmd, size, 1, NULL, 1 ) );
+		mDepthBuffer = std::unique_ptr<DepthBuffer>( new DepthBuffer( size, 0 ) );
+		
+		createMirrorTexture();
+
+		mLayer.Header.Type = ovrLayerType_EyeFov;
+		mLayer.Header.Flags = ovrLayerFlag_TextureOriginAtBottomLeft; //opengl specific
+
+		mLayer.ColorTexture[0] = mRenderBuffer->TextureSet;
+		mLayer.ColorTexture[1] = mRenderBuffer->TextureSet;
+		mLayer.Fov[0] = mEyeRenderDesc[0].Fov;
+		mLayer.Fov[1] = mEyeRenderDesc[1].Fov;
+
+		mLayer.Viewport[0].Pos.x = 0;
+		mLayer.Viewport[0].Pos.y = 0;
+		mLayer.Viewport[0].Size.w = size.x / 2;
+		mLayer.Viewport[0].Size.h = size.y;
+
+		mLayer.Viewport[1].Pos.x = size.x / 2;
+		mLayer.Viewport[1].Pos.y = 0;
+		mLayer.Viewport[1].Size.w = size.x / 2;
+		mLayer.Viewport[1].Size.h = size.y;
+	}
+}
+
 void OculusRift::bind() const
 {
-	if ( mFbo ) {
-		mFbo->bindFramebuffer();
+	if( mRenderBuffer ) {
+		auto* set = mRenderBuffer->TextureSet;
+		set->CurrentIndex = (set->CurrentIndex + 1) % set->TextureCount;
+		mRenderBuffer->setAndClearRenderSurface( mDepthBuffer.get() );
 	}
 }
 
 void OculusRift::unbind() const
 {
-	if ( mFbo ) {
-		mFbo->unbindFramebuffer();
+	if( mRenderBuffer ) {
+		mRenderBuffer->unsetRenderSurface();
 	}
 }
 
@@ -328,47 +385,6 @@ void OculusRift::updateHmdSettings()
 	mHmdSettingsChanged = false;
 }
 
-void OculusRift::initializeFrameBuffer()
-{
-	// Determine the size and create the buffer.
-	ovrSizei left = ovrHmd_GetFovTextureSize( mHmd, ovrEye_Left, mHmd->DefaultEyeFov[ovrEye_Left], mScreenPercentage );
-	ovrSizei right = ovrHmd_GetFovTextureSize( mHmd, ovrEye_Right, mHmd->DefaultEyeFov[ovrEye_Right], mScreenPercentage );
-	int w = left.w + right.w;
-	int h = math<int>::max( left.h, right.h );
-	
-	if( ! mFbo || mFbo->getWidth() != w || mFbo->getHeight() != h ) {
-
-
-		// Create mirror texture and an FBO used to copy mirror texture to back buffer
-		ovrGLTexture* mirrorTexture;
-		ovrHmd_CreateMirrorTextureGL( mHmd, GL_RGBA, w, h, (ovrTexture**)&mirrorTexture );
-		// Configure the mirror read buffer
-		GLuint mirrorFBO = 0;
-		gl::TextureRef mirror = gl::Texture::create( GL_TEXTURE_2D, mirrorTexture->OGL.TexId, w, h, false );
-		// Specify the buffer format.
-		gl::Fbo::Format fmt;
-		fmt.attachment( GL_COLOR_ATTACHMENT0, mirror );
-		fmt.enableDepthBuffer();
-		fmt.setSamples( 0 ); // TODO: support multi-sampling
-		mFbo = gl::Fbo::create( w, h, fmt )
-		
-		// The actual size may be different due to hardware limits.
-		w = mFbo->getWidth();
-		h = mFbo->getHeight();
-		
-		// Initialize eye rendering information.
-		for( ovrEyeType eye = ovrEye_Left; eye < ovrEye_Count; eye = static_cast<ovrEyeType>( eye + 1 ) ) {
-			mEyeTexture[eye].OGL.Header.API = ovrRenderAPI_OpenGL;
-			mEyeTexture[eye].OGL.Header.TextureSize = toOvr( mFbo->getSize() );
-			//mEyeTexture[eye].OGL.Header.RenderViewport.Size.w = mEyeViewport[eye].Size.w = w / 2;
-			//mEyeTexture[eye].OGL.Header.RenderViewport.Size.h = mEyeViewport[eye].Size.h = h;
-			//mEyeTexture[eye].OGL.Header.RenderViewport.Pos.x = mEyeViewport[eye].Pos.x = eye * ( w + 1 ) / 2;
-			//mEyeTexture[eye].OGL.Header.RenderViewport.Pos.y = mEyeViewport[eye].Pos.y = 0;
-			mEyeTexture[eye].OGL.TexId = mFbo->getColorTexture()->getId();
-		}
-	}
-}
-
 void OculusRift::startDrawFn( Renderer *renderer )
 {
 	renderer->makeCurrentContext();
@@ -392,23 +408,12 @@ void OculusRift::finishDrawFn( Renderer *renderer )
 	// Set up positional data.
 	ovrViewScaleDesc viewScaleDesc;
 	viewScaleDesc.HmdSpaceToWorldScaleInMeters = 1.0f;
-	viewScaleDesc.HmdToEyeViewOffset[0] = ViewOffset[0];
-	viewScaleDesc.HmdToEyeViewOffset[1] = ViewOffset[1];
+	viewScaleDesc.HmdToEyeViewOffset[0] = mEyeViewOffset[0];
+	viewScaleDesc.HmdToEyeViewOffset[1] = mEyeViewOffset[1];
 
-	ovrLayerEyeFov ld;
-	ld.Header.Type = ovrLayerType_EyeFov;
-	ld.Header.Flags = ovrLayerFlag_TextureOriginAtBottomLeft;   // Because OpenGL.
 
-	for( int eye = 0; eye < 2; eye++ )
-	{
-		ld.ColorTexture[eye] = eyeRenderTexture[eye]->TextureSet;
-		ld.Viewport[eye] = Recti( eyeRenderTexture[eye]->GetSize() );
-		ld.Fov[eye] = mHmd->DefaultEyeFov[eye];
-		ld.RenderPose[eye] = EyeRenderPose[eye];
-	}
-
-	ovrLayerHeader* layers = &ld.Header;
-	ovrResult result = ovrHmd_SubmitFrame( HMD, 0, &viewScaleDesc, &layers, 1 );
+	ovrLayerHeader* layers = &mLayer.Header;
+	ovrResult result = ovrHmd_SubmitFrame( mHmd, 0, &viewScaleDesc, &layers, 1 );
 }
 
 ScopedBind::ScopedBind( OculusRift& rift )
