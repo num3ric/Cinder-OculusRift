@@ -79,6 +79,7 @@ void BasicSampleApp::update()
 void BasicSampleApp::draw()
 {
 	hmd::ScopedBind bind{ mRift };
+
 	gl::clear( Color( 0.02, 0.02, 0.1 ) );
 
 	auto sceneDraw = [&]() {
@@ -156,7 +157,7 @@ void prepareSettings( App::Settings *settings )
 	
 	settings->disableFrameRate();
 	settings->setTitle( "Oculus Rift Sample" );
-	settings->setWindowSize( 1920, 1080 );
+	settings->setWindowSize( 1920/2, 1080/2 );
 }
 
 CINDER_APP( BasicSampleApp, RendererGl( RendererGl::Options().msaa(0) ), prepareSettings );

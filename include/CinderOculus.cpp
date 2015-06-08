@@ -59,8 +59,7 @@ void RiftManager::initialize()
 RiftManager::RiftManager()
 {
 	ovrInitParams * params = nullptr; // default options
-	ovrBool result = ovr_Initialize( params );
-	if( ! result ) {
+	if( ovr_Initialize( params ) != ovrSuccess ) {
 		throw std::runtime_error( "Failed to initialize Oculus VR." );
 	}
 }
@@ -98,7 +97,7 @@ OculusRift::OculusRift()
 	
 	if( ovrHmd_Detect() > 0 ) {
 		auto result = ovrHmd_Create( 0, &mHmd );
-		CI_ASSERT( result );
+		CI_ASSERT( result == ovrSuccess );
 		// Set hmd capabilities.
 		mHmdCaps = ovrHmd_GetEnabledCaps( mHmd ) | mHmdCaps;
 		ovrHmd_SetEnabledCaps( mHmd, mHmdCaps );
@@ -394,13 +393,15 @@ void OculusRift::startDrawFn( Renderer *renderer )
 		updateHmdSettings();
 	}
 
-	// Update eye render poses.
-	ovrVector3f hmdToEyeViewOffset[2] = { mEyeRenderDesc[0].HmdToEyeViewOffset, mEyeRenderDesc[1].HmdToEyeViewOffset };
 	if( isMonoscopic() ) {
-		hmdToEyeViewOffset[0].x = 0; // This value would normally be half the IPD,
-		hmdToEyeViewOffset[1].x = 0; //  received from the loaded profile. 
+		mEyeViewOffset[0].x = 0; // This value would normally be half the IPD,
+		mEyeViewOffset[1].x = 0; //  received from the loaded profile. 
 	}
-	ovrHmd_GetEyePoses( mHmd, 0, hmdToEyeViewOffset, mEyeRenderPose, &mTrackingState );
+	else {
+		mEyeViewOffset[0] = mEyeRenderDesc[0].HmdToEyeViewOffset;
+		mEyeViewOffset[1] = mEyeRenderDesc[1].HmdToEyeViewOffset;
+	}
+	ovrHmd_GetEyePoses( mHmd, 0, mEyeViewOffset, mEyeRenderPose, &mTrackingState );
 }
 
 void OculusRift::finishDrawFn( Renderer *renderer )
@@ -414,6 +415,8 @@ void OculusRift::finishDrawFn( Renderer *renderer )
 
 	ovrLayerHeader* layers = &mLayer.Header;
 	ovrResult result = ovrHmd_SubmitFrame( mHmd, 0, &viewScaleDesc, &layers, 1 );
+
+	mMirrorFbo->blitToScreen( mMirrorFbo->getBounds(), mWindow->getBounds() );
 }
 
 ScopedBind::ScopedBind( OculusRift& rift )
