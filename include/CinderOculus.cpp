@@ -140,7 +140,8 @@ bool OculusRift::initialize( const ci::app::WindowRef& window )
 
 	// Create or resize the frame buffer.
 	initializeFrameBuffer();
-	
+	updateHmdSettings();
+
 	// Override the window's startDraw() and finishDraw() methods, so we can inject our own code.
 	RendererGlRef rendererGl = std::dynamic_pointer_cast<RendererGl>( window->getRenderer() );
 	if( rendererGl ) {
@@ -154,11 +155,6 @@ bool OculusRift::initialize( const ci::app::WindowRef& window )
 	window->getSignalClose().connect( std::bind( [&]( ovrHmd hmd ) { assert( hmd == mHmd ); detachFromWindow(); }, mHmd ) );
 	
 	ovrHmd_ConfigureTracking( mHmd, mTrackingCaps, 0 );
-	for( int i = 0; i < ovrEye_Count; ++i ) {
-		mEyeRenderDesc[i] = ovrHmd_GetRenderDesc( mHmd, (ovrEyeType)i, mHmd->MaxEyeFov[i] );
-	}
-	
-	updateHmdSettings();
 	
 	mWindow = window;
 	return true;
@@ -197,8 +193,12 @@ void OculusRift::initializeFrameBuffer()
 		
 		//createMirrorTexture();
 
+		for( int i = 0; i < ovrEye_Count; ++i ) {
+			mEyeRenderDesc[i] = ovrHmd_GetRenderDesc( mHmd, (ovrEyeType)i, mHmd->DefaultEyeFov[i] );
+		}
+
 		mLayer.Header.Type = ovrLayerType_EyeFov;
-		mLayer.Header.Flags = ovrLayerFlag_TextureOriginAtBottomLeft; //opengl specific
+		//mLayer.Header.Flags = ovrLayerFlag_TextureOriginAtBottomLeft; //opengl specific
 
 		mLayer.ColorTexture[0] = mRenderBuffer->TextureSet;
 		mLayer.ColorTexture[1] = mRenderBuffer->TextureSet;
@@ -240,7 +240,7 @@ void OculusRift::enableEye( int eyeIndex, bool applyMatrices )
 
 	mHmdEyeCamera.setOrientation( fromOvr( mEyeRenderPose[mEye].Orientation ) );
 	mHmdEyeCamera.setEyePoint( fromOvr( mEyeRenderPose[mEye].Position ) );
-	mHmdEyeCamera.mOvrProjection = fromOvr( ovrMatrix4f_Projection( mEyeRenderDesc[mEye].Fov, mHmdEyeCamera.getNearClip(), mHmdEyeCamera.getFarClip(), true ) );
+	mHmdEyeCamera.mOvrProjection = fromOvr( ovrMatrix4f_Projection( mEyeRenderDesc[mEye].Fov, mHmdEyeCamera.getNearClip(), mHmdEyeCamera.getFarClip(), ovrProjection_RightHanded ) );
 
 	if( applyMatrices ) {
 		gl::viewport( getEyeViewport() );
@@ -350,8 +350,7 @@ void OculusRift::setMirrorPercentage( float sp )
 bool OculusRift::isTracked() const
 {
 	ovrTrackingState ts = ovrHmd_GetTrackingState( mHmd, ovr_GetTimeInSeconds() );
-	auto status = ts.StatusFlags;
-	bool tracked = ( status & ovrStatus_PositionConnected ) && ( status & ovrStatus_PositionTracked );
+	bool tracked = (ts.StatusFlags & ovrStatus_PositionConnected) && (ts.StatusFlags & ovrStatus_PositionTracked);
 	return tracked && isPositionalTrackingEnabled();
 }
 
@@ -405,6 +404,9 @@ void OculusRift::startDrawFn( Renderer *renderer )
 	ovrFrameTiming ftiming = ovrHmd_GetFrameTiming( mHmd, 0 );
 	ovrTrackingState hmdState = ovrHmd_GetTrackingState( mHmd, ftiming.DisplayMidpointSeconds );
 	ovr_CalcEyePoses( hmdState.HeadPose.ThePose, mEyeViewOffset, mEyeRenderPose );
+
+	mLayer.RenderPose[0] = mEyeRenderPose[0];
+	mLayer.RenderPose[1] = mEyeRenderPose[1];
 }
 
 void OculusRift::finishDrawFn( Renderer *renderer )
@@ -418,7 +420,7 @@ void OculusRift::finishDrawFn( Renderer *renderer )
 	ovrLayerHeader* layers = &mLayer.Header;
 	ovrResult result = ovrHmd_SubmitFrame( mHmd, 0, &viewScaleDesc, &layers, 1 );
 
-	mMirrorFbo->blitToScreen( mMirrorFbo->getBounds(), mWindow->getBounds() );
+	//mMirrorFbo->blitToScreen( mMirrorFbo->getBounds(), mWindow->getBounds() );
 }
 
 ScopedBind::ScopedBind( OculusRift& rift )
