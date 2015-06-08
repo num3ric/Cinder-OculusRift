@@ -40,6 +40,7 @@
 #include "cinder/Log.h"
 #include "cinder/gl/VboMesh.h"
 #include "cinder/Utilities.h"
+#include "cinder/Breakpoint.h"
 
 using namespace ci;
 using namespace ci::app;
@@ -47,6 +48,20 @@ using namespace hmd;
 
 std::unique_ptr<RiftManager> RiftManager::mInstance = nullptr;
 std::once_flag RiftManager::mOnceFlag;
+
+bool OVRSUCCEEDED( const ovrResult& result )
+{
+	if( OVR_SUCCESS( result ) ) {
+		return true;
+	}
+	else {
+		ovrErrorInfo errorInfo;
+		ovr_GetLastErrorInfo( &errorInfo );
+		CI_LOG_E( errorInfo.ErrorString );
+		CI_BREAKPOINT();
+	}
+	return false;
+}
 
 void RiftManager::initialize()
 {
@@ -59,9 +74,7 @@ void RiftManager::initialize()
 RiftManager::RiftManager()
 {
 	ovrInitParams * params = nullptr; // default options
-	if( ovr_Initialize( params ) != ovrSuccess ) {
-		throw std::runtime_error( "Failed to initialize Oculus VR." );
-	}
+	OVRSUCCEEDED( ovr_Initialize( params ) );
 }
 
 RiftManager::~RiftManager()
@@ -95,9 +108,8 @@ OculusRift::OculusRift()
 	mHostCamera.setEyePoint( vec3( 0 ) );
 	mHostCamera.setViewDirection( vec3( 0, 0, 1 ) );
 	
-	if( ovrHmd_Detect() > 0 ) {
-		auto result = ovrHmd_Create( 0, &mHmd );
-		CI_ASSERT( result == ovrSuccess );
+	if( OVRSUCCEEDED( ovrHmd_Detect() ) ) {
+		OVRSUCCEEDED( ovrHmd_Create( 0, &mHmd ) );
 		// Set hmd capabilities.
 		mHmdCaps = ovrHmd_GetEnabledCaps( mHmd ) | mHmdCaps;
 		ovrHmd_SetEnabledCaps( mHmd, mHmdCaps );
@@ -154,7 +166,7 @@ bool OculusRift::initialize( const ci::app::WindowRef& window )
 	// Connect to the window close event, so we can properly destroy our HMD.
 	window->getSignalClose().connect( std::bind( [&]( ovrHmd hmd ) { assert( hmd == mHmd ); detachFromWindow(); }, mHmd ) );
 	
-	ovrHmd_ConfigureTracking( mHmd, mTrackingCaps, 0 );
+	OVRSUCCEEDED( ovrHmd_ConfigureTracking( mHmd, mTrackingCaps, 0 ) );
 	
 	mWindow = window;
 	return true;
@@ -164,7 +176,8 @@ void OculusRift::createMirrorTexture()
 {
 	ivec2 ws = mMirrorPercentage * vec2( mHmd->Resolution.w, mHmd->Resolution.h );
 
-	ovrHmd_CreateMirrorTextureGL( mHmd, GL_RGBA, ws.x, ws.y, (ovrTexture**)&mMirrorTexture );
+ 	OVRSUCCEEDED( ovrHmd_CreateMirrorTextureGL( mHmd, GL_RGBA, ws.x, ws.y, (ovrTexture**)&mMirrorTexture ) );
+
 	// Configure the mirror read buffer
 	GLuint mirrorFBO = 0;
 	gl::TextureRef mirror = gl::Texture::create( GL_TEXTURE_2D, mMirrorTexture->OGL.TexId, ws.x, ws.y, false );
@@ -198,7 +211,7 @@ void OculusRift::initializeFrameBuffer()
 		}
 
 		mLayer.Header.Type = ovrLayerType_EyeFov;
-		//mLayer.Header.Flags = ovrLayerFlag_TextureOriginAtBottomLeft; //opengl specific
+		mLayer.Header.Flags = ovrLayerFlag_HighQuality;// | ovrLayerFlag_TextureOriginAtBottomLeft; //opengl specific
 
 		mLayer.ColorTexture[0] = mRenderBuffer->TextureSet;
 		mLayer.ColorTexture[1] = mRenderBuffer->TextureSet;
@@ -418,7 +431,8 @@ void OculusRift::finishDrawFn( Renderer *renderer )
 	viewScaleDesc.HmdToEyeViewOffset[1] = mEyeViewOffset[1];
 
 	ovrLayerHeader* layers = &mLayer.Header;
-	ovrResult result = ovrHmd_SubmitFrame( mHmd, 0, &viewScaleDesc, &layers, 1 );
+	auto result = ovrHmd_SubmitFrame( mHmd, 0, &viewScaleDesc, &layers, 1 );
+	//TODO: handle ovrSuccess_NotVisible
 
 	//mMirrorFbo->blitToScreen( mMirrorFbo->getBounds(), mWindow->getBounds() );
 }
