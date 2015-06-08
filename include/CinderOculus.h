@@ -407,7 +407,7 @@ private:
 	std::unique_ptr<DepthBuffer>	mDepthBuffer;
 
 	ovrGLTexture*					mMirrorTexture;
-	ci::gl::FboRef					mMirrorFbo;
+	GLuint							mMirrorFBO;
 };
 
 struct ScopedBind

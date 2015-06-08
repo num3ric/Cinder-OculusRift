@@ -49,7 +49,7 @@ using namespace hmd;
 std::unique_ptr<RiftManager> RiftManager::mInstance = nullptr;
 std::once_flag RiftManager::mOnceFlag;
 
-bool OVRSUCCEEDED( const ovrResult& result )
+bool OVR_VERIFY( const ovrResult& result )
 {
 	if( OVR_SUCCESS( result ) ) {
 		return true;
@@ -74,7 +74,7 @@ void RiftManager::initialize()
 RiftManager::RiftManager()
 {
 	ovrInitParams * params = nullptr; // default options
-	OVRSUCCEEDED( ovr_Initialize( params ) );
+	OVR_VERIFY( ovr_Initialize( params ) );
 }
 
 RiftManager::~RiftManager()
@@ -104,15 +104,16 @@ OculusRift::OculusRift()
 , mIsMonoscopic( false )
 , mUsePositionalTracking( true )
 , mHmd( nullptr )
+, mMirrorFBO( 0 )
+, mMirrorTexture( nullptr )
 {
 	mHostCamera.setEyePoint( vec3( 0 ) );
 	mHostCamera.setViewDirection( vec3( 0, 0, 1 ) );
 	
-	if( OVRSUCCEEDED( ovrHmd_Detect() ) ) {
-		OVRSUCCEEDED( ovrHmd_Create( 0, &mHmd ) );
-		// Set hmd capabilities.
-		mHmdCaps = ovrHmd_GetEnabledCaps( mHmd ) | mHmdCaps;
-		ovrHmd_SetEnabledCaps( mHmd, mHmdCaps );
+	if( OVR_SUCCESS( ovrHmd_Detect() ) ) {
+		OVR_VERIFY( ovrHmd_Create( 0, &mHmd ) );
+		//mHmdCaps = ovrHmd_GetEnabledCaps( mHmd ) | mHmdCaps;
+		//ovrHmd_SetEnabledCaps( mHmd, mHmdCaps );
 	}
 	else {
 		CI_LOG_E( "Failed to create Hmd." );
@@ -124,7 +125,11 @@ OculusRift::~OculusRift()
 {
 	detachFromWindow();
 
-	ovrHmd_DestroyMirrorTexture( mHmd, (ovrTexture*)mMirrorTexture );
+	if( mMirrorTexture ) {
+		glDeleteFramebuffers( 1, &mMirrorFBO );
+		ovrHmd_DestroyMirrorTexture( mHmd, (ovrTexture*)mMirrorTexture );
+	}
+
 	ovrHmd_DestroySwapTextureSet( mHmd, mRenderBuffer->TextureSet );
 
 	if( mHmd )
@@ -150,7 +155,6 @@ bool OculusRift::initialize( const ci::app::WindowRef& window )
 	if( ! mHmd || ! isValid( window ) )
 		return false;
 
-	// Create or resize the frame buffer.
 	initializeFrameBuffer();
 	updateHmdSettings();
 
@@ -166,7 +170,7 @@ bool OculusRift::initialize( const ci::app::WindowRef& window )
 	// Connect to the window close event, so we can properly destroy our HMD.
 	window->getSignalClose().connect( std::bind( [&]( ovrHmd hmd ) { assert( hmd == mHmd ); detachFromWindow(); }, mHmd ) );
 	
-	OVRSUCCEEDED( ovrHmd_ConfigureTracking( mHmd, mTrackingCaps, 0 ) );
+	OVR_VERIFY( ovrHmd_ConfigureTracking( mHmd, mTrackingCaps, 0 ) );
 	
 	mWindow = window;
 	return true;
@@ -176,17 +180,13 @@ void OculusRift::createMirrorTexture()
 {
 	ivec2 ws = mMirrorPercentage * vec2( mHmd->Resolution.w, mHmd->Resolution.h );
 
- 	OVRSUCCEEDED( ovrHmd_CreateMirrorTextureGL( mHmd, GL_RGBA, ws.x, ws.y, (ovrTexture**)&mMirrorTexture ) );
+ 	OVR_VERIFY( ovrHmd_CreateMirrorTextureGL( mHmd, GL_RGBA, ws.x, ws.y, (ovrTexture**)&mMirrorTexture ) );
 
-	// Configure the mirror read buffer
-	GLuint mirrorFBO = 0;
-	gl::TextureRef mirror = gl::Texture::create( GL_TEXTURE_2D, mMirrorTexture->OGL.TexId, ws.x, ws.y, false );
-	// Specify the buffer format.
-	gl::Fbo::Format fmt;
-	fmt.attachment( GL_COLOR_ATTACHMENT0, mirror );
-	fmt.enableDepthBuffer();
-	fmt.setSamples( 0 ); // TODO: support multi-sampling
-	mMirrorFbo = gl::Fbo::create( ws.x, ws.y, fmt );
+	glGenFramebuffers( 1, &mMirrorFBO );
+	glBindFramebuffer( GL_READ_FRAMEBUFFER, mMirrorFBO );
+	glFramebufferTexture2D( GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, mMirrorTexture->OGL.TexId, 0 );
+	glFramebufferRenderbuffer( GL_READ_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, 0 );
+	glBindFramebuffer( GL_READ_FRAMEBUFFER, 0 );
 }
 
 void OculusRift::initializeFrameBuffer()
@@ -204,7 +204,7 @@ void OculusRift::initializeFrameBuffer()
 		mRenderBuffer = std::unique_ptr<TextureBuffer>( new TextureBuffer( mHmd, size, 1, NULL, 1 ) );
 		mDepthBuffer = std::unique_ptr<DepthBuffer>( new DepthBuffer( size, 0 ) );
 		
-		//createMirrorTexture();
+		createMirrorTexture();
 
 		for( int i = 0; i < ovrEye_Count; ++i ) {
 			mEyeRenderDesc[i] = ovrHmd_GetRenderDesc( mHmd, (ovrEyeType)i, mHmd->DefaultEyeFov[i] );
@@ -435,6 +435,15 @@ void OculusRift::finishDrawFn( Renderer *renderer )
 	//TODO: handle ovrSuccess_NotVisible
 
 	//mMirrorFbo->blitToScreen( mMirrorFbo->getBounds(), mWindow->getBounds() );
+	// Blit mirror texture to back buffer
+	glBindFramebuffer( GL_READ_FRAMEBUFFER, mMirrorFBO );
+	glBindFramebuffer( GL_DRAW_FRAMEBUFFER, 0 );
+	GLint w = mMirrorTexture->OGL.Header.TextureSize.w;
+	GLint h = mMirrorTexture->OGL.Header.TextureSize.h;
+	glBlitFramebuffer( 0, h, w, 0,
+		0, 0, w, h,
+		GL_COLOR_BUFFER_BIT, GL_NEAREST );
+	glBindFramebuffer( GL_READ_FRAMEBUFFER, 0 );
 }
 
 ScopedBind::ScopedBind( OculusRift& rift )
