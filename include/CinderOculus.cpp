@@ -112,7 +112,6 @@ OculusRift::~OculusRift()
 {
 	detachFromWindow();
 
-	mMirrorFbo.reset();
 	ovrHmd_DestroyMirrorTexture( mHmd, (ovrTexture*)mMirrorTexture );
 	ovrHmd_DestroySwapTextureSet( mHmd, mRenderBuffer->TextureSet );
 
@@ -196,7 +195,7 @@ void OculusRift::initializeFrameBuffer()
 		mRenderBuffer = std::unique_ptr<TextureBuffer>( new TextureBuffer( mHmd, size, 1, NULL, 1 ) );
 		mDepthBuffer = std::unique_ptr<DepthBuffer>( new DepthBuffer( size, 0 ) );
 		
-		createMirrorTexture();
+		//createMirrorTexture();
 
 		mLayer.Header.Type = ovrLayerType_EyeFov;
 		mLayer.Header.Flags = ovrLayerFlag_TextureOriginAtBottomLeft; //opengl specific
@@ -319,8 +318,8 @@ bool OculusRift::getPositionalTrackingCamera( CameraPersp* positional ) const
 									aspectRatio,
 									- mHmd->CameraFrustumNearZInMeters,
 									- mHmd->CameraFrustumFarZInMeters );
-		positional->setOrientation( fromOvr( mTrackingState.CameraPose.Orientation ) );
-		positional->setEyePoint( fromOvr( mTrackingState.CameraPose.Position ) );
+		positional->setOrientation( fromOvr( mEyeRenderPose[mEye].Orientation ) );
+		positional->setEyePoint( fromOvr( mEyeRenderPose[mEye].Position ) );
 		return true;
 	}
 	return false;
@@ -350,7 +349,8 @@ void OculusRift::setMirrorPercentage( float sp )
 
 bool OculusRift::isTracked() const
 {
-	auto status = mTrackingState.StatusFlags;
+	ovrTrackingState ts = ovrHmd_GetTrackingState( mHmd, ovr_GetTimeInSeconds() );
+	auto status = ts.StatusFlags;
 	bool tracked = ( status & ovrStatus_PositionConnected ) && ( status & ovrStatus_PositionTracked );
 	return tracked && isPositionalTrackingEnabled();
 }
@@ -401,7 +401,10 @@ void OculusRift::startDrawFn( Renderer *renderer )
 		mEyeViewOffset[0] = mEyeRenderDesc[0].HmdToEyeViewOffset;
 		mEyeViewOffset[1] = mEyeRenderDesc[1].HmdToEyeViewOffset;
 	}
-	ovrHmd_GetEyePoses( mHmd, 0, mEyeViewOffset, mEyeRenderPose, &mTrackingState );
+
+	ovrFrameTiming ftiming = ovrHmd_GetFrameTiming( mHmd, 0 );
+	ovrTrackingState hmdState = ovrHmd_GetTrackingState( mHmd, ftiming.DisplayMidpointSeconds );
+	ovr_CalcEyePoses( hmdState.HeadPose.ThePose, mEyeViewOffset, mEyeRenderPose );
 }
 
 void OculusRift::finishDrawFn( Renderer *renderer )
@@ -411,7 +414,6 @@ void OculusRift::finishDrawFn( Renderer *renderer )
 	viewScaleDesc.HmdSpaceToWorldScaleInMeters = 1.0f;
 	viewScaleDesc.HmdToEyeViewOffset[0] = mEyeViewOffset[0];
 	viewScaleDesc.HmdToEyeViewOffset[1] = mEyeViewOffset[1];
-
 
 	ovrLayerHeader* layers = &mLayer.Header;
 	ovrResult result = ovrHmd_SubmitFrame( mHmd, 0, &viewScaleDesc, &layers, 1 );

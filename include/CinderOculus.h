@@ -401,8 +401,6 @@ private:
 	ovrPosef			mEyeRenderPose[ovrEye_Count];
 	ovrVector3f			mEyeViewOffset[ovrEye_Count];
 
-	ovrTrackingState	mTrackingState;
-
 	ovrLayerEyeFov		mLayer;
 
 	std::unique_ptr<TextureBuffer>	mRenderBuffer;
