@@ -399,7 +399,6 @@ void OculusRift::updateHmdSettings()
 void OculusRift::startDrawFn( Renderer *renderer )
 {
 	renderer->makeCurrentContext();
-	initializeFrameBuffer();
 
 	if( mHmdSettingsChanged ) {
 		updateHmdSettings();
@@ -444,6 +443,8 @@ void OculusRift::finishDrawFn( Renderer *renderer )
 		0, 0, w, h,
 		GL_COLOR_BUFFER_BIT, GL_NEAREST );
 	glBindFramebuffer( GL_READ_FRAMEBUFFER, 0 );
+
+	renderer->swapBuffers();
 }
 
 ScopedBind::ScopedBind( OculusRift& rift )
