@@ -62,7 +62,7 @@ BasicSampleApp::BasicSampleApp()
 	mCamera.lookAt( vec3( 0 ) );
 	mCamera.setFov( 45.0f );
 
-	//gl::enableVerticalSync();
+	gl::enableVerticalSync( false );
 	gl::enableDepthRead();
 	gl::enableDepthWrite();
 	gl::color( Color::white() );
