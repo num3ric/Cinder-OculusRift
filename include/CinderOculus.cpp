@@ -203,15 +203,13 @@ void OculusRift::initializeFrameBuffer()
 		//Create render buffer (with depth)
 		mRenderBuffer = std::unique_ptr<TextureBuffer>( new TextureBuffer( mHmd, size, 1, NULL, 1 ) );
 		mDepthBuffer = std::unique_ptr<DepthBuffer>( new DepthBuffer( size, 0 ) );
-		
 		createMirrorTexture();
-
 		for( int i = 0; i < ovrEye_Count; ++i ) {
 			mEyeRenderDesc[i] = ovrHmd_GetRenderDesc( mHmd, (ovrEyeType)i, mHmd->DefaultEyeFov[i] );
 		}
 
 		mLayer.Header.Type = ovrLayerType_EyeFov;
-		mLayer.Header.Flags = ovrLayerFlag_HighQuality;// | ovrLayerFlag_TextureOriginAtBottomLeft; //opengl specific
+		mLayer.Header.Flags = ovrLayerFlag_TextureOriginAtBottomLeft; //opengl specific
 
 		mLayer.ColorTexture[0] = mRenderBuffer->TextureSet;
 		mLayer.ColorTexture[1] = mRenderBuffer->TextureSet;
@@ -279,9 +277,7 @@ glm::mat4 OculusRift::getViewMatrix() const
 		vec3 up = vec3( orientation * vec4( 0, 1, 0, 0 ) );
 		vec3 forward = vec3( orientation * vec4( 0, 0, -1, 0 ) );
 		vec3 eye = mHostCamera.getEyePoint();
-		if( isTracked() ) {
-			eye += vec3( hostOrientation * vec4( mHmdEyeCamera.getEyePoint(), 1 ) );
-		}
+		eye += vec3( hostOrientation * vec4( mHmdEyeCamera.getEyePoint(), 1 ) );
 		mViewMatrix = mat4( glm::lookAt( eye, eye + forward, up ) ) * glm::scale( vec3( 1.0f / mHeadScale ) );
 		mViewMatrixCached = true;
 	}
