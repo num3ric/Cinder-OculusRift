@@ -282,8 +282,8 @@ public:
 	std::list<ovrEyeType>	getEyes() const;
 
 	//! Returns the active eye camera.
-	ci::CameraPersp&		getEyeCamera() { return mHmdEyeCamera; }
-	const ci::CameraPersp&	getEyeCamera() const { return mHmdEyeCamera; }
+	ci::CameraPersp&		getEyeCamera() { return mEyeCamera; }
+	const ci::CameraPersp&	getEyeCamera() const { return mEyeCamera; }
 
 	/*! Re-centers the sensor orientation.
 	 * Normally this will recenter the (x,y,z) translational components and the yaw
@@ -324,6 +324,8 @@ public:
 	//! Enabling the use of positional tracking translations.
 	void	enablePositionalTracking( bool enabled ) { mUsePositionalTracking = enabled; }
 
+	bool	isRenderUpdating() const { return mIsRenderUpdating; }
+
 	//! Scale the head scale factor (based in meters)
 	void	setHeadScale( float scale );
 
@@ -348,7 +350,7 @@ public:
 	bool isDesktopExtended() const;
 private:
 
-	class HmdEyeCamera : public ci::CameraPersp 
+	class EyeCamera : public ci::CameraPersp 
 	{
 	protected:
 		void calcProjection() const override
@@ -381,7 +383,7 @@ private:
 
 	ci::app::WindowRef	mWindow;
 
-	HmdEyeCamera		mHmdEyeCamera;
+	EyeCamera			mEyeCamera;
 	ci::CameraPersp		mHostCamera;
 
 	float				mHeadScale;
@@ -393,6 +395,8 @@ private:
 	bool				mIsMirrrored;
 	bool				mIsMonoscopic;
 	bool				mUsePositionalTracking;
+
+	bool				mIsRenderUpdating;
 
 	// Oculus Rift SDK
 	ovrHmd				mHmd;
