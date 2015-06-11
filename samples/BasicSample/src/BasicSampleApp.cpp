@@ -78,6 +78,12 @@ void BasicSampleApp::update()
 
 void BasicSampleApp::draw()
 {
+	/* OPTIONAL: ovrSuccess_NotVisible is returned if the frame wasn't actually displayed, which can happen when VR
+	application loses focus. Our sample code handles this case by updating the isRenderUpdating flag.
+	While frames are not visible, rendering is paused to eliminate unnecessary GPU load. */
+	if( ! mRift.isRenderUpdating() )
+		return;
+
 	hmd::ScopedBind bind{ mRift };
 
 	gl::clear( Color( 0.02, 0.02, 0.1 ) );

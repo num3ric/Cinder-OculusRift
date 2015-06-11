@@ -106,6 +106,7 @@ OculusRift::OculusRift()
 , mHmd( nullptr )
 , mMirrorFBO( 0 )
 , mMirrorTexture( nullptr )
+, mIsRenderUpdating( true )
 {
 	mHostCamera.setEyePoint( vec3( 0 ) );
 	mHostCamera.setViewDirection( vec3( 0, 0, 1 ) );
@@ -209,8 +210,8 @@ void OculusRift::initializeFrameBuffer()
 		}
 
 		mLayer.Header.Type = ovrLayerType_EyeFov;
-		mLayer.Header.Flags = ovrLayerFlag_TextureOriginAtBottomLeft; //opengl specific
-
+		mLayer.Header.Flags = ovrLayerFlag_HighQuality; //opengl specific
+		mLayer.Header.Flags |= ovrLayerFlag_TextureOriginAtBottomLeft;
 		mLayer.ColorTexture[0] = mRenderBuffer->TextureSet;
 		mLayer.ColorTexture[1] = mRenderBuffer->TextureSet;
 		mLayer.Fov[0] = mEyeRenderDesc[0].Fov;
@@ -225,6 +226,12 @@ void OculusRift::initializeFrameBuffer()
 		mLayer.Viewport[1].Pos.y = 0;
 		mLayer.Viewport[1].Size.w = size.x / 2;
 		mLayer.Viewport[1].Size.h = size.y;
+
+		for( int i = 0; i < 2; ++i ) {
+			auto vp = mLayer.Viewport[i];
+			mLayer.Viewport[i].Pos.y = mRenderBuffer->getSize().y - vp.Size.h;
+			//CI_LOG_I( toString( mRenderBuffer->getSize().y ) + " " + toString( vp.Size.h ) );
+		}
 	}
 }
 
@@ -249,10 +256,10 @@ void OculusRift::enableEye( int eyeIndex, bool applyMatrices )
 	mProjectionCached = mViewMatrixCached = mInverseViewMatrixCached = false;
 	mEye = mHmd->EyeRenderOrder[eyeIndex];
 
-	mHmdEyeCamera.setOrientation( fromOvr( mEyeRenderPose[mEye].Orientation ) );
-	mHmdEyeCamera.setEyePoint( fromOvr( mEyeRenderPose[mEye].Position ) );
+	mEyeCamera.setOrientation( fromOvr( mEyeRenderPose[mEye].Orientation ) );
+	mEyeCamera.setEyePoint( fromOvr( mEyeRenderPose[mEye].Position ) );
 	unsigned int projectionModifier = ovrProjection_RightHanded | ovrProjection_ClipRangeOpenGL;
-	mHmdEyeCamera.mOvrProjection = fromOvr( ovrMatrix4f_Projection( mEyeRenderDesc[mEye].Fov, mHmdEyeCamera.getNearClip(), mHmdEyeCamera.getFarClip(), projectionModifier ) );
+	mEyeCamera.mOvrProjection = fromOvr( ovrMatrix4f_Projection( mEyeRenderDesc[mEye].Fov, mEyeCamera.getNearClip(), mEyeCamera.getFarClip(), projectionModifier ) );
 
 	if( applyMatrices ) {
 		gl::viewport( getEyeViewport() );
@@ -274,11 +281,11 @@ glm::mat4 OculusRift::getViewMatrix() const
 {
 	if( ! mViewMatrixCached ) {
 		mat4 hostOrientation = glm::toMat4( mHostCamera.getOrientation() );
-		mat4 orientation = hostOrientation * glm::toMat4( mHmdEyeCamera.getOrientation() );
+		mat4 orientation = hostOrientation * glm::toMat4( mEyeCamera.getOrientation() );
 		vec3 up = vec3( orientation * vec4( 0, 1, 0, 0 ) );
 		vec3 forward = vec3( orientation * vec4( 0, 0, -1, 0 ) );
 		vec3 eye = mHostCamera.getEyePoint();
-		eye += vec3( hostOrientation * vec4( mHmdEyeCamera.getEyePoint(), 1 ) );
+		eye += vec3( hostOrientation * vec4( mEyeCamera.getEyePoint(), 1 ) );
 		mViewMatrix = mat4( glm::lookAt( eye, eye + forward, up ) ) * glm::scale( vec3( 1.0f / mHeadScale ) );
 		mViewMatrixCached = true;
 	}
@@ -297,7 +304,7 @@ glm::mat4 OculusRift::getInverseViewMatrix() const
 glm::mat4 OculusRift::getProjectionMatrix() const
 {
 	if( ! mProjectionCached ) {
-		mProjectionMatrix = mHmdEyeCamera.getProjectionMatrix();
+		mProjectionMatrix = mEyeCamera.getProjectionMatrix();
 		mProjectionCached = true;
 	}
 	return mProjectionMatrix;
@@ -430,6 +437,8 @@ void OculusRift::finishDrawFn( Renderer *renderer )
 
 	ovrLayerHeader* layers = &mLayer.Header;
 	auto result = ovrHmd_SubmitFrame( mHmd, 0, &viewScaleDesc, &layers, 1 );
+	OVR_VERIFY( result );
+	mIsRenderUpdating = ( result == ovrSuccess );
 	//TODO: handle ovrSuccess_NotVisible
 
 	//mMirrorFbo->blitToScreen( mMirrorFbo->getBounds(), mWindow->getBounds() );
@@ -444,6 +453,8 @@ void OculusRift::finishDrawFn( Renderer *renderer )
 	glBindFramebuffer( GL_READ_FRAMEBUFFER, 0 );
 
 	renderer->swapBuffers();
+
+	// Do NOT advance TextureSet currentIndex - that has already been done above just before rendering.
 }
 
 ScopedBind::ScopedBind( OculusRift& rift )
