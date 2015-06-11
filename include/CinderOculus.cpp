@@ -251,7 +251,8 @@ void OculusRift::enableEye( int eyeIndex, bool applyMatrices )
 
 	mHmdEyeCamera.setOrientation( fromOvr( mEyeRenderPose[mEye].Orientation ) );
 	mHmdEyeCamera.setEyePoint( fromOvr( mEyeRenderPose[mEye].Position ) );
-	mHmdEyeCamera.mOvrProjection = fromOvr( ovrMatrix4f_Projection( mEyeRenderDesc[mEye].Fov, mHmdEyeCamera.getNearClip(), mHmdEyeCamera.getFarClip(), ovrProjection_RightHanded ) );
+	unsigned int projectionModifier = ovrProjection_RightHanded | ovrProjection_ClipRangeOpenGL;
+	mHmdEyeCamera.mOvrProjection = fromOvr( ovrMatrix4f_Projection( mEyeRenderDesc[mEye].Fov, mHmdEyeCamera.getNearClip(), mHmdEyeCamera.getFarClip(), projectionModifier ) );
 
 	if( applyMatrices ) {
 		gl::viewport( getEyeViewport() );
@@ -409,9 +410,11 @@ void OculusRift::startDrawFn( Renderer *renderer )
 		mEyeViewOffset[1] = mEyeRenderDesc[1].HmdToEyeViewOffset;
 	}
 
-	ovrFrameTiming ftiming = ovrHmd_GetFrameTiming( mHmd, 0 );
-	ovrTrackingState hmdState = ovrHmd_GetTrackingState( mHmd, ftiming.DisplayMidpointSeconds );
-	ovr_CalcEyePoses( hmdState.HeadPose.ThePose, mEyeViewOffset, mEyeRenderPose );
+	//ovrFrameTiming ftiming = ovrHmd_GetFrameTiming( mHmd, 0 );
+	//ovrTrackingState hmdState = ovrHmd_GetTrackingState( mHmd, ftiming.DisplayMidpointSeconds );
+	//ovr_CalcEyePoses( hmdState.HeadPose.ThePose, mEyeViewOffset, mEyeRenderPose );
+
+	ovrHmd_GetEyePoses( mHmd, 0, mEyeViewOffset, mEyeRenderPose, nullptr );
 
 	mLayer.RenderPose[0] = mEyeRenderPose[0];
 	mLayer.RenderPose[1] = mEyeRenderPose[1];
