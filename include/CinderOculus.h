@@ -302,10 +302,6 @@ public:
 	 * render helps minimize aliasing and increases detail. */
 	void	setScreenPercentage( float sp );
 
-	float	getMirrorPercentage() const { return mMirrorPercentage; }
-
-	void	setMirrorPercentage( float sp );
-
 	//! Returns true if the render is also mirrored on screen (direct mode).
 	bool	isMirrored() const;
 	//! Enable mirroring to screen (direct mode).
@@ -366,8 +362,8 @@ private:
 	
 	static bool	isValid( const ci::app::WindowRef& window );
 	
-	void	initializeFrameBuffer();
-	void	createMirrorTexture();
+	void	initializeFrameBuffer( const ci::app::WindowRef& window );
+	void	createMirrorTexture( const ci::app::WindowRef& window );
 
 	void	updateHmdSettings();
 	
@@ -388,7 +384,6 @@ private:
 
 	float				mHeadScale;
 	float				mScreenPercentage;
-	float				mMirrorPercentage;
 	unsigned int		mHmdCaps, mTrackingCaps;
 	bool				mHmdSettingsChanged;
 	bool				mIsExtended;

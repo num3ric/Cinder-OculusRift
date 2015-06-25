@@ -95,7 +95,6 @@ OculusRift::OculusRift()
 : mWindow( nullptr )
 , mHeadScale( 1.0f )
 , mScreenPercentage( 1.0f )
-, mMirrorPercentage( 0.5f )
 , mHmdCaps( kDefaultHmdCaps )
 , mTrackingCaps( kDefaulTrackingCaps )
 , mHmdSettingsChanged( true )
@@ -156,7 +155,7 @@ bool OculusRift::initialize( const ci::app::WindowRef& window )
 	if( ! mHmd || ! isValid( window ) )
 		return false;
 
-	initializeFrameBuffer();
+	initializeFrameBuffer( window );
 	updateHmdSettings();
 
 	// Override the window's startDraw() and finishDraw() methods, so we can inject our own code.
@@ -177,9 +176,9 @@ bool OculusRift::initialize( const ci::app::WindowRef& window )
 	return true;
 }
 
-void OculusRift::createMirrorTexture()
+void OculusRift::createMirrorTexture( const ci::app::WindowRef& window )
 {
-	ivec2 ws = mMirrorPercentage * vec2( mHmd->Resolution.w, mHmd->Resolution.h );
+	ivec2 ws = window->getSize();// mMirrorPercentage * vec2( mHmd->Resolution.w, mHmd->Resolution.h );
 
  	OVR_VERIFY( ovrHmd_CreateMirrorTextureGL( mHmd, GL_RGBA, ws.x, ws.y, (ovrTexture**)&mMirrorTexture ) );
 
@@ -190,7 +189,7 @@ void OculusRift::createMirrorTexture()
 	glBindFramebuffer( GL_READ_FRAMEBUFFER, 0 );
 }
 
-void OculusRift::initializeFrameBuffer()
+void OculusRift::initializeFrameBuffer( const ci::app::WindowRef& window )
 {
 	// Determine the size and create the buffer.
 	ovrSizei left = ovrHmd_GetFovTextureSize( mHmd, ovrEye_Left, mHmd->DefaultEyeFov[ovrEye_Left], mScreenPercentage );
@@ -204,7 +203,7 @@ void OculusRift::initializeFrameBuffer()
 		//Create render buffer (with depth)
 		mRenderBuffer = std::unique_ptr<TextureBuffer>( new TextureBuffer( mHmd, size, 1, NULL, 1 ) );
 		mDepthBuffer = std::unique_ptr<DepthBuffer>( new DepthBuffer( size, 0 ) );
-		createMirrorTexture();
+		createMirrorTexture( window );
 		for( int i = 0; i < ovrEye_Count; ++i ) {
 			mEyeRenderDesc[i] = ovrHmd_GetRenderDesc( mHmd, (ovrEyeType)i, mHmd->DefaultEyeFov[i] );
 		}
@@ -219,19 +218,19 @@ void OculusRift::initializeFrameBuffer()
 
 		mLayer.Viewport[0].Pos.x = 0;
 		mLayer.Viewport[0].Pos.y = 0;
-		mLayer.Viewport[0].Size.w = size.x / 2;
-		mLayer.Viewport[0].Size.h = size.y;
+		mLayer.Viewport[0].Size.w = size.y;
+		mLayer.Viewport[0].Size.h = size.x / 2;
 
-		mLayer.Viewport[1].Pos.x = size.x / 2;
-		mLayer.Viewport[1].Pos.y = 0;
-		mLayer.Viewport[1].Size.w = size.x / 2;
-		mLayer.Viewport[1].Size.h = size.y;
+		mLayer.Viewport[1].Pos.x = 0;
+		mLayer.Viewport[1].Pos.y = size.x / 2;
+		mLayer.Viewport[1].Size.w = size.y;
+		mLayer.Viewport[1].Size.h = size.x / 2;
 
-		for( int i = 0; i < 2; ++i ) {
-			auto vp = mLayer.Viewport[i];
-			mLayer.Viewport[i].Pos.y = mRenderBuffer->getSize().y - vp.Size.h;
-			//CI_LOG_I( toString( mRenderBuffer->getSize().y ) + " " + toString( vp.Size.h ) );
-		}
+		//for( int i = 0; i < 2; ++i ) {
+		//	auto vp = mLayer.Viewport[i];
+		//	mLayer.Viewport[i].Pos.y = mRenderBuffer->getSize().y - vp.Size.h;
+		//	//CI_LOG_I( toString( mRenderBuffer->getSize().y ) + " " + toString( vp.Size.h ) );
+		//}
 	}
 }
 
@@ -355,12 +354,6 @@ void OculusRift::setScreenPercentage( float sp )
 {
 	CI_ASSERT( sp > 0.0f );
 	mScreenPercentage = sp;
-}
-
-void OculusRift::setMirrorPercentage( float sp )
-{
-	CI_ASSERT( sp > 0.0f );
-	mMirrorPercentage = sp;
 }
 
 bool OculusRift::isTracked() const

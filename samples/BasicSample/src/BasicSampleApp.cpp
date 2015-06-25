@@ -45,7 +45,7 @@ BasicSampleApp::BasicSampleApp()
 		host.setEyePoint( mViewerPosition );
 		host.lookAt( vec3( 0 ) );
 		mRift.setHostCamera( host );
-		mRift.setScreenPercentage( 1.25f );
+		//mRift.setScreenPercentage( 1.25f );
 	}
 	
 	try {
@@ -163,7 +163,9 @@ void prepareSettings( App::Settings *settings )
 	
 	settings->disableFrameRate();
 	settings->setTitle( "Oculus Rift Sample" );
+	//settings->setWindowSize( 1920, 1080 );
 	settings->setWindowSize( 1920/2, 1080/2 );
+	//settings->setWindowSize( 1100, 618 );
 }
 
 CINDER_APP( BasicSampleApp, RendererGl( RendererGl::Options().msaa(0) ), prepareSettings );
