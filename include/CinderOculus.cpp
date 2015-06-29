@@ -136,8 +136,8 @@ OculusRift::~OculusRift()
 		glDeleteFramebuffers( 1, &mMirrorFBO );
 		ovrHmd_DestroyMirrorTexture( mHmd, (ovrTexture*)mMirrorTexture );
 	}
-
-	ovrHmd_DestroySwapTextureSet( mHmd, mRenderBuffer->TextureSet );
+	if( mRenderBuffer )
+		ovrHmd_DestroySwapTextureSet( mHmd, mRenderBuffer->TextureSet );
 
 	if( mHmd )
 		ovrHmd_Destroy( mHmd );
