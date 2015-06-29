@@ -1,3 +1,6 @@
+
+#include "CinderOculus.h"
+
 #include "cinder/app/App.h"
 #include "cinder/app/RendererGl.h"
 #include "cinder/gl/gl.h"
@@ -6,8 +9,6 @@
 #include "cinder/Log.h"
 #include "cinder/CameraUi.h"
 #include "cinder/Utilities.h"
-
-#include "CinderOculus.h"
 
 using namespace ci;
 using namespace ci::app;

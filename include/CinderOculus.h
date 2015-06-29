@@ -44,7 +44,6 @@
 #include "cinder/Camera.h"
 
 #include "OVR_CAPI_0_6_0.h"
-//#include "OVR_Version.h"
 #include "OVR_CAPI_GL.h"
 
 #include <map>
@@ -187,7 +186,7 @@ struct TextureBuffer
 	GLuint        fboId;
 	glm::ivec2         texSize;
 
-	TextureBuffer( ovrHmd hmd, glm::ivec2 size, int mipLevels, unsigned char * data, int sampleCount )
+	TextureBuffer( ovrHmd hmd, glm::ivec2 size, int mipLevels, int sampleCount )
 	{
 		CI_ASSERT( sampleCount <= 1 ); // The code doesn't currently handle MSAA textures.
 		texSize = size;
@@ -196,7 +195,7 @@ struct TextureBuffer
 		CI_ASSERT( hmd ); // No HMD? A little odd.
 		CI_ASSERT( sampleCount == 1 ); // ovrHmd_CreateSwapTextureSetD3D11 doesn't support MSAA.
 
-		auto result = ovrHmd_CreateSwapTextureSetGL( hmd, GL_RGBA, size.x, size.x, &TextureSet );
+		auto result = ovrHmd_CreateSwapTextureSetGL( hmd, GL_RGBA, size.x, size.y, &TextureSet );
 		CI_ASSERT( result == ovrSuccess );
 
 		for( int i = 0; i < TextureSet->TextureCount; ++i ) {
