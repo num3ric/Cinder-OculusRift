@@ -74,6 +74,8 @@ void BasicSampleApp::update()
 	mTime = getElapsedSeconds();
 	float t = float( mTime ) * 0.4f;
 	mLightWorldPosition = vec4( 1.0f * math<float>::sin( t ), math<float>::sin( t * 4.0f ), 1.0f * math<float>::cos( t ), 1 );
+
+	mRift.setScreenPercentage( 0.5f * ( sin( app::getElapsedSeconds() ) + 1.0f ) + 0.5f );
 }
 
 void BasicSampleApp::draw()
@@ -84,10 +86,6 @@ void BasicSampleApp::draw()
 	if( ! mRift.isRenderUpdating() )
 		return;
 
-	hmd::ScopedBind bind{ mRift };
-
-	gl::clear( Color( 0.02, 0.02, 0.1 ) );
-
 	auto sceneDraw = [&]() {
 		{
 			gl::ScopedModelMatrix push;
@@ -96,20 +94,34 @@ void BasicSampleApp::draw()
 			gl::translate( 0.0f, -0.5f, 0.0f );
 			mTeapot->draw();
 		}
-		
+
 		gl::lineWidth( 3.0f );
 		gl::drawCoordinateFrame( 2 );
 		gl::drawSphere( vec3( mLightWorldPosition ), 0.05f, 36 );
 	};
 
-	if( mRift.hasWindow( getWindow() ) ) {
+	gl::clear( Color( 0.02, 0.02, 0.1 ) );
+
+	if( ! mRift.hasWindow( getWindow() ) ) {
+		gl::viewport( getWindowSize() );
+		gl::setMatrices( mCamera );
+
+		const mat4& view = mCamera.getViewMatrix();
+		mShader->uniform( "uLightViewPosition", view * mLightWorldPosition );
+		mShader->uniform( "uSkyDirection", view * vec4( 0, 1, 0, 0 ) );
+
+		sceneDraw();
+	}
+	else {
+		hmd::ScopedBind bind{ mRift };
+
 		for( auto eye : mRift.getEyes() ) {
 			mRift.enableEye( eye );
-			
+
 			mShader->uniform( "uLightViewPosition", mRift.getViewMatrix() * mLightWorldPosition );
 			mShader->uniform( "uSkyDirection", mRift.getViewMatrix() * vec4( 0, 1, 0, 0 ) );
 			sceneDraw();
-			
+
 			// Draw positional tracking camera frustum
 			CameraPersp positional;
 			if( mRift.getPositionalTrackingCamera( &positional ) ) {
@@ -119,15 +131,6 @@ void BasicSampleApp::draw()
 				gl::drawFrustum( positional );
 			}
 		}
-	} else {
-		gl::viewport( getWindowSize() );
-		gl::setMatrices( mCamera );
-		
-		const mat4& view = mCamera.getViewMatrix();
-		mShader->uniform( "uLightViewPosition", view * mLightWorldPosition );
-		mShader->uniform( "uSkyDirection", view * vec4( 0, 1, 0, 0 ) );
-
-		sceneDraw();
 	}
 }
 
@@ -152,7 +155,7 @@ void BasicSampleApp::keyDown( KeyEvent event )
 		mRift.enableMonoscopic( ! mRift.isMonoscopic() );
 		break;
 	case KeyEvent::KEY_t:
-		mRift.enablePositionalTracking( ! mRift.isTracked() );
+		mRift.enablePositionalTracking( ! mRift.isPositionalTrackingEnabled() );
 		break;
 	}
 }
@@ -163,9 +166,7 @@ void prepareSettings( App::Settings *settings )
 	
 	settings->disableFrameRate();
 	settings->setTitle( "Oculus Rift Sample" );
-	//settings->setWindowSize( 1920, 1080 );
 	settings->setWindowSize( 1920/2, 1080/2 );
-	//settings->setWindowSize( 1100, 618 );
 }
 
 CINDER_APP( BasicSampleApp, RendererGl( RendererGl::Options().msaa(0) ), prepareSettings );

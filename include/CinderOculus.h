@@ -165,16 +165,11 @@ struct DepthBuffer
 		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
 		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
 		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
+		glTexImage2D( GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, size.x, size.y, 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_INT, NULL );
+	}
 
-		GLenum internalFormat = GL_DEPTH_COMPONENT24;
-		GLenum type = GL_UNSIGNED_INT;
-		//if( GLE_ARB_depth_buffer_float )
-		//{
-		//	internalFormat = GL_DEPTH_COMPONENT32F;
-		//	type = GL_FLOAT;
-		//}
-
-		glTexImage2D( GL_TEXTURE_2D, 0, internalFormat, size.x, size.y, 0, GL_DEPTH_COMPONENT, type, NULL );
+	~DepthBuffer() {
+		glDeleteTextures( 1, &texId );
 	}
 };
 
@@ -212,6 +207,10 @@ struct TextureBuffer
 		}
 
 		glGenFramebuffers( 1, &fboId );
+	}
+
+	~TextureBuffer() {
+		glDeleteFramebuffers( 1, &fboId );
 	}
 
 	glm::ivec2 getSize() const
@@ -264,7 +263,7 @@ public:
 	void	detachFromWindow();
 
 	//! Binds the final framebuffer used by the OVR runtime.
-	void	bind() const;
+	void	bind();
 	//! Unbinds the framebuffer.
 	void	unbind() const;
 
@@ -310,7 +309,10 @@ public:
 	bool	isMonoscopic() const { return mIsMonoscopic; }
 	/*! Enabling monoscopic will eliminate offsets between each eye,
 	 * thus eliminating any 3d stereoscopic effect. */
-	void	enableMonoscopic( bool enabled ) { mIsMonoscopic = enabled; }
+	void	enableMonoscopic( bool enabled );
+
+	//! Updates horizontal offset between the eyes depending on mono vs stereo rendering.
+	void	updateEyeOffset();
 
 	//! Returns true if the positional tracking translations are applied.
 	bool	isTracked() const;
@@ -325,10 +327,8 @@ public:
 	//! Scale the head scale factor (based in meters)
 	void	setHeadScale( float scale );
 
-	//! Returns the native window position of the HMD.
-	//glm::ivec2	getNativeWindowPos() const { return fromOvr( mHmd->WindowsPos ); }
 	//! Returns the native resolution of the HMD.
-	glm::ivec2	getNativeWindowResolution() const { return fromOvr( mHmd->Resolution ); }
+	glm::ivec2	getNativeHmdResolution() const { return fromOvr( mHmd->Resolution ); }
 	//! Returns the size of the render target fbo (used by both eyes).
 	glm::ivec2	getFboSize() const { return mRenderBuffer->getSize(); }
 
@@ -339,7 +339,7 @@ public:
 	//! Returns the composed host and (active) eye projection matrix.
 	glm::mat4	getProjectionMatrix() const;
 	//! Returns the active eye viewport.
-	std::pair<glm::ivec2, glm::ivec2> getEyeViewport() const { return fromOvr( mLayer.Viewport[mEye] ); }
+	std::pair<glm::ivec2, glm::ivec2> getEyeViewport() const { return fromOvr( mBaseLayer.Viewport[mEye] ); }
 
 	bool hasWindow( const ci::app::WindowRef &window ) const { return mWindow == window; }
 //	bool isCaptured() const;
@@ -362,10 +362,8 @@ private:
 	
 	static bool	isValid( const ci::app::WindowRef& window );
 	
-	void	initializeFrameBuffer( const ci::app::WindowRef& window );
-	void	createMirrorTexture( const ci::app::WindowRef& window );
-
-	void	updateHmdSettings();
+	void	initializeFrameBuffer();
+	void	initializeMirrorTexture( const glm::ivec2& size );
 	
 	void	startDrawFn( ci::app::Renderer *renderer );
 	void	finishDrawFn( ci::app::Renderer *renderer );
@@ -399,8 +397,7 @@ private:
 	ovrEyeRenderDesc	mEyeRenderDesc[ovrEye_Count];
 	ovrPosef			mEyeRenderPose[ovrEye_Count];
 	ovrVector3f			mEyeViewOffset[ovrEye_Count];
-
-	ovrLayerEyeFov		mLayer;
+	ovrLayerEyeFov		mBaseLayer;
 
 	std::unique_ptr<TextureBuffer>	mRenderBuffer;
 	std::unique_ptr<DepthBuffer>	mDepthBuffer;
