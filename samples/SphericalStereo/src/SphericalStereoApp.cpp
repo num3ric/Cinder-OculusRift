@@ -61,8 +61,7 @@ private:
 
 SphericalStereoApp::SphericalStereoApp()
 {
-	if( mRift.attachToWindow( getWindow() ) ) {
-		app::setWindowSize( mRift.getNativeWindowResolution() );
+	if( mRift.initialize( getWindow() ) ) {
 		mRift.enableMonoscopic( true );
 		mRift.enablePositionalTracking( false );
 		mRift.setScreenPercentage( 1.25f );
@@ -73,7 +72,7 @@ SphericalStereoApp::SphericalStereoApp()
 	mSphere		= gl::Batch::create( geom::Icosphere().subdivisions( 2 ), mStereoGlsl );
 
 	// Generally preferable to enable vsync to prevent tearing in the headset display
-	gl::enableVerticalSync();
+	gl::enableVerticalSync( false );
 	gl::color( Color::white() );
 }
 
@@ -135,6 +134,15 @@ void SphericalStereoApp::keyDown( KeyEvent event )
 	case KeyEvent::KEY_r:
 		mRift.recenterPose();
 		break;
+	case KeyEvent::KEY_m:
+		mRift.enableMirrored( ! mRift.isMirrored() );
+		break;
+	case KeyEvent::KEY_s:
+		mRift.enableMonoscopic( ! mRift.isMonoscopic() );
+		break;
+	case KeyEvent::KEY_p:
+		mRift.enablePositionalTracking( ! mRift.isPositionalTrackingEnabled() );
+		break;
 	}
 }
 
@@ -147,6 +155,5 @@ CINDER_APP( SphericalStereoApp, RendererGl( RendererGl::Options().msaa( 0 ) ), [
 	hmd::RiftManager::initialize();
 	settings->disableFrameRate();
 	settings->setTitle( "Oculus Rift Sample" );
-	settings->setWindowPos( ivec2( 0 ) );
-	settings->setWindowSize( 1920, 1080 );
+	settings->setWindowSize( 1920/2, 1080/2 );
 } )

@@ -237,8 +237,9 @@ void OculusRift::startDrawFn( Renderer *renderer )
 	}
 
 	if( isMonoscopic() ) {
-		mEyeViewOffset[0].x = 0; // This value would normally be half the IPD,
-		mEyeViewOffset[1].x = 0; //  received from the loaded profile. 
+		auto centerEyeOffset = 0.5f * ( fromOvr( mEyeRenderDesc[0].HmdToEyeViewOffset ) + fromOvr( mEyeRenderDesc[1].HmdToEyeViewOffset ) );
+		mEyeViewOffset[0] = toOvr( centerEyeOffset );
+		mEyeViewOffset[1] = toOvr( centerEyeOffset );
 	}
 	else {
 		mEyeViewOffset[0] = mEyeRenderDesc[0].HmdToEyeViewOffset;
@@ -267,7 +268,12 @@ void OculusRift::enableEye( int eyeIndex, bool applyMatrices )
 	mProjectionCached = mViewMatrixCached = mInverseViewMatrixCached = false;
 	mEye = mHmd->EyeRenderOrder[eyeIndex];
 
-	mEyeCamera.setEyePoint( fromOvr( mEyeRenderPose[mEye].Position ) );
+	if( isPositionalTrackingEnabled() ) {
+		mEyeCamera.setEyePoint( fromOvr( mEyeRenderPose[mEye].Position ) );
+	}
+	else {
+		mEyeCamera.setEyePoint( vec3(0.0) );
+	}
 	mEyeCamera.setOrientation( fromOvr( mEyeRenderPose[mEye].Orientation ) );
 	unsigned int projectionModifier = ovrProjection_RightHanded | ovrProjection_ClipRangeOpenGL;
 	mEyeCamera.mOvrProjection = fromOvr( ovrMatrix4f_Projection( mEyeRenderDesc[mEye].Fov, mEyeCamera.getNearClip(), mEyeCamera.getFarClip(), projectionModifier ) );
@@ -301,16 +307,18 @@ void OculusRift::finishDrawFn( Renderer *renderer )
 	mIsRenderUpdating = ( result == ovrSuccess );
 	//TODO: handle ovrSuccess_NotVisible
 
-	//mMirrorFbo->blitToScreen( mMirrorFbo->getBounds(), mWindow->getBounds() );
-	// Blit mirror texture to back buffer
-	glBindFramebuffer( GL_READ_FRAMEBUFFER, mMirrorFBO );
-	glBindFramebuffer( GL_DRAW_FRAMEBUFFER, 0 );
-	GLint w = mMirrorTexture->OGL.Header.TextureSize.w;
-	GLint h = mMirrorTexture->OGL.Header.TextureSize.h;
-	glBlitFramebuffer( 0, h, w, 0,
-		0, 0, w, h,
-		GL_COLOR_BUFFER_BIT, GL_NEAREST );
-	glBindFramebuffer( GL_READ_FRAMEBUFFER, 0 );
+	if( isMirrored() ) {
+		// Blit mirror texture to back buffer
+		glBindFramebuffer( GL_READ_FRAMEBUFFER, mMirrorFBO );
+		glBindFramebuffer( GL_DRAW_FRAMEBUFFER, 0 );
+		GLint w = mMirrorTexture->OGL.Header.TextureSize.w;
+		GLint h = mMirrorTexture->OGL.Header.TextureSize.h;
+		glBlitFramebuffer( 0, h, w, 0,
+			0, 0, w, h,
+			GL_COLOR_BUFFER_BIT, GL_NEAREST );
+		glBindFramebuffer( GL_READ_FRAMEBUFFER, 0 );
+	}
+
 
 	renderer->swapBuffers();
 

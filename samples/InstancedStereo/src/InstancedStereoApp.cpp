@@ -32,7 +32,7 @@ private:
 InstancedStereoApp::InstancedStereoApp()
 : mLightWorldPosition( vec4( 1, 1, 1, 1 ) )
 {
-	if( mRift.attachToWindow( getWindow() ) ) {
+	if( mRift.initialize( getWindow() ) ) {
 		if( mRift.isDesktopExtended() )
 			app::setFullScreen();
 		else
@@ -54,8 +54,7 @@ InstancedStereoApp::InstancedStereoApp()
 	}
 	mTeapot = gl::Batch::create( geom::Teapot().subdivisions( 12 ), mShader );
 
-	// Generally preferable to enable vsync to prevent tearing in the headset display
-	gl::enableVerticalSync();
+	gl::enableVerticalSync( false );
 	gl::enableDepthRead();
 	gl::enableDepthWrite();
 	gl::enable( GL_CLIP_DISTANCE0, true );

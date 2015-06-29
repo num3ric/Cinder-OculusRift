@@ -54,7 +54,7 @@ BasicSampleApp::BasicSampleApp()
 		host.setEyePoint( mViewerPosition );
 		host.lookAt( vec3( 0 ) );
 		mRift.setHostCamera( host );
-		//mRift.setScreenPercentage( 1.25f );
+		mRift.setScreenPercentage( 1.25f );
 	}
 
 	// Setup camera for the debug (main) window.
