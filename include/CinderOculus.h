@@ -314,6 +314,7 @@ public:
 
 	//! Returns true if the positional tracking translations are applied.
 	bool	isTracked() const;
+	bool	isTracked( const ovrTrackingState& ts ) const;
 	//! Returns if positional tracking is enabled.
 	bool	isPositionalTrackingEnabled() const { return mUsePositionalTracking; }
 	//! Enabling the use of positional tracking translations.

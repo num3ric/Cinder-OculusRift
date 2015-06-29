@@ -378,14 +378,15 @@ void OculusRift::recenterPose()
 
 bool OculusRift::getPositionalTrackingCamera( CameraPersp* positional ) const
 {
-	if( isTracked() ) {
+	ovrTrackingState ts = ovrHmd_GetTrackingState( mHmd, ovr_GetTimeInSeconds() );
+	if( isTracked( ts ) ) {
 		float aspectRatio = abs( tan( 0.5f * mHmd->CameraFrustumHFovInRadians ) / tan( 0.5f * mHmd->CameraFrustumVFovInRadians ) );
 		positional->setPerspective(	toDegrees( mHmd->CameraFrustumVFovInRadians ),
 									aspectRatio,
 									- mHmd->CameraFrustumNearZInMeters,
 									- mHmd->CameraFrustumFarZInMeters );
-		positional->setOrientation( fromOvr( mEyeRenderPose[mEye].Orientation ) );
-		positional->setEyePoint( fromOvr( mEyeRenderPose[mEye].Position ) );
+		positional->setOrientation( fromOvr( ts.CameraPose.Orientation ) );
+		positional->setEyePoint( fromOvr( ts.CameraPose.Position ) );
 		return true;
 	}
 	return false;
@@ -410,6 +411,11 @@ void OculusRift::setScreenPercentage( float sp )
 bool OculusRift::isTracked() const
 {
 	ovrTrackingState ts = ovrHmd_GetTrackingState( mHmd, ovr_GetTimeInSeconds() );
+	return isTracked( ts );
+}
+
+bool OculusRift::isTracked( const ovrTrackingState& ts ) const
+{
 	bool tracked = (ts.StatusFlags & ovrStatus_PositionConnected) && (ts.StatusFlags & ovrStatus_PositionTracked);
 	return tracked && isPositionalTrackingEnabled();
 }
