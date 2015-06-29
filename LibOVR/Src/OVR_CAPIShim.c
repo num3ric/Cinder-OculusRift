@@ -5,16 +5,16 @@ Content     :   CAPI DLL user library
 Created     :   November 20, 2014
 Copyright   :   Copyright 2014 Oculus VR, LLC All Rights reserved.
 
-Licensed under the Oculus VR Rift SDK License Version 3.2 (the "License"); 
-you may not use the Oculus VR Rift SDK except in compliance with the License, 
-which is provided at the time of installation or download, or which 
+Licensed under the Oculus VR Rift SDK License Version 3.2 (the "License");
+you may not use the Oculus VR Rift SDK except in compliance with the License,
+which is provided at the time of installation or download, or which
 otherwise accompanies this software in either electronic or hard copy form.
 
 You may obtain a copy of the License at
 
-http://www.oculusvr.com/licenses/LICENSE-3.2 
+http://www.oculusvr.com/licenses/LICENSE-3.2
 
-Unless required by applicable law or agreed to in writing, the Oculus VR SDK 
+Unless required by applicable law or agreed to in writing, the Oculus VR SDK
 distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
@@ -231,7 +231,7 @@ static size_t OVR_strlcat(char* dest, const char* src, size_t destsize)
             return (strcmp(pStr + strLength - findLength, pFind) == 0);
         return ovrFalse;
     }
-            
+
     static ovrBool OVR_isBundleFolder(const char* filePath)
     {
         static const char* extensionArray[] = { ".app", ".bundle", ".framework", ".plugin", ".kext" };
@@ -242,7 +242,7 @@ static size_t OVR_strlcat(char* dest, const char* src, size_t destsize)
             if(OVR_strend(filePath, extensionArray[i], (size_t)-1, (size_t)-1))
                 return ovrTrue;
         }
-                
+
         return ovrFalse;
     }
 #endif
@@ -308,7 +308,7 @@ static ovrBool OVR_GetCurrentWorkingDirectory(FilePathCharType* directoryPath, s
 }
 
 
-// The appContainer argument is specific currently to only Macintosh. If true and the application is a .app bundle then it returns the 
+// The appContainer argument is specific currently to only Macintosh. If true and the application is a .app bundle then it returns the
 // location of the bundle and not the path to the executable within the bundle. Else return the path to the executable binary itself.
 // The moduleHandle refers to the relevant dynamic (a.k.a. shared) library. The main executable is the main module, and each of the shared
 // libraries is a module. This way you can specify that you want to know the directory of the given shared library, which may be different
@@ -335,7 +335,7 @@ static ovrBool OVR_GetCurrentApplicationDirectory(FilePathCharType* directoryPat
     #elif defined(__APPLE__)
         uint32_t directoryPathCapacity32 = (uint32_t)directoryPathCapacity;
         int result = _NSGetExecutablePath(directoryPath, &directoryPathCapacity32);
-    
+
         if(result == 0) // If success...
         {
             char realPath[OVR_MAX_PATH];
@@ -357,14 +357,14 @@ static ovrBool OVR_GetCurrentApplicationDirectory(FilePathCharType* directoryPat
                         OVR_strlcpy(containerPath, dirname(containerPath), sizeof(containerPath));
                         pathIsContainer = OVR_isBundleFolder(containerPath);
                     }
-                
+
                     if(pathIsContainer)
                         length = OVR_strlcpy(directoryPath, containerPath, directoryPathCapacity);
                 }
 
                 if(length == 0) // If not set above in the appContainer block...
                     length = OVR_strlcpy(directoryPath, realPath, directoryPathCapacity);
-                
+
                 while(length-- && (directoryPath[length] != '/'))
                     directoryPath[length] = '\0'; // Strip the file name from the file path, leaving a trailing / char.
 
@@ -402,7 +402,7 @@ static ovrBool OVR_GetCurrentApplicationDirectory(FilePathCharType* directoryPat
 
 #if defined(_WIN32) || defined(OVR_ENABLE_DEVELOPER_SEARCH) // Used only in these cases
 
-// Get the file path to the current module's (DLL or EXE) directory within the current process. 
+// Get the file path to the current module's (DLL or EXE) directory within the current process.
 // Will be different from the process module handle if the current module is a DLL and is in a different directory than the EXE module.
 // If successful then directoryPath will be valid and ovrTrue is returned, else directoryPath will be empty and ovrFalse is returned.
 static ovrBool OVR_GetCurrentModuleDirectory(FilePathCharType* directoryPath, size_t directoryPathCapacity, ovrBool appContainer)
@@ -501,7 +501,7 @@ static ModuleHandleType OVR_FindLibraryPath(int requestedProductVersion, int req
     moduleHandle = ModuleHandleTypeNull;
     if(libraryPathCapacity)
         libraryPath[0] = '\0';
-    
+
     // Note: OVR_ENABLE_DEVELOPER_SEARCH is deprecated in favor of the simpler LIBOVR_DLL_DIR, as the edge
     // case uses of the former created some complications that may be best solved by simply using a LIBOVR_DLL_DIR
     // environment variable which the user can set in their debugger or system environment variables.
@@ -513,16 +513,16 @@ static ModuleHandleType OVR_FindLibraryPath(int requestedProductVersion, int req
 
     {
         const char* pLibOvrDllDir = getenv("LIBOVR_DLL_DIR"); // Example value: /dev/OculusSDK/Main/LibOVR/Mac/Debug/
-           
+
         if(pLibOvrDllDir)
         {
             char developerDir8[OVR_MAX_PATH];
             size_t length = OVR_strlcpy(developerDir8, pLibOvrDllDir, sizeof(developerDir8)); // If missing a trailing path separator then append one.
-        
+
             if((length > 0) && (length < sizeof(developerDir8)) && (developerDir8[length - 1] != OVR_FILE_PATH_SEPARATOR[0]))
             {
                 length = OVR_strlcat(developerDir8, OVR_FILE_PATH_SEPARATOR, sizeof(developerDir8));
-            
+
                 if(length < sizeof(developerDir8))
                 {
                     #if defined(_WIN32)
@@ -536,7 +536,7 @@ static ModuleHandleType OVR_FindLibraryPath(int requestedProductVersion, int req
             }
         }
     }
-   
+
     // Support checking for a developer library location override via the OVR_SDK_ROOT environment variable.
     // This pathway is deprecated in favor of using LIBOVR_DLL_DIR instead.
     #if defined(OVR_ENABLE_DEVELOPER_SEARCH)
@@ -561,14 +561,14 @@ static ModuleHandleType OVR_FindLibraryPath(int requestedProductVersion, int req
 
         if(sdkRoot[0])
         {
-            // We want to use a developer version of the library only if the application is also being executed from 
-            // a developer location. Ideally we would do this by checking that the relative path from the executable to 
-            // the shared library is the same at runtime as it was when the executable was first built, but we don't have 
-            // an easy way to do that from here and it would require some runtime help from the application code. 
+            // We want to use a developer version of the library only if the application is also being executed from
+            // a developer location. Ideally we would do this by checking that the relative path from the executable to
+            // the shared library is the same at runtime as it was when the executable was first built, but we don't have
+            // an easy way to do that from here and it would require some runtime help from the application code.
             // Instead we verify that the application is simply in the same developer tree that was was when built.
             // We could put in some additional logic to make it very likely to know if the EXE is in its original location.
             FilePathCharType modulePath[OVR_MAX_PATH];
-            const ovrBool pathMatch = OVR_GetCurrentModuleDirectory(modulePath, OVR_MAX_PATH, ovrTrue) && 
+            const ovrBool pathMatch = OVR_GetCurrentModuleDirectory(modulePath, OVR_MAX_PATH, ovrTrue) &&
                                         (OVR_PathStartsWith(modulePath, sdkRoot) == ovrTrue);
             if(pathMatch == ovrFalse)
             {
@@ -583,7 +583,7 @@ static ModuleHandleType OVR_FindLibraryPath(int requestedProductVersion, int req
             #else
                 const char* pConfigDirName = "Release";
             #endif
-            
+
             #if defined(_MSC_VER)
                 #if defined(_WIN64)
                     const char* pArchDirName = "x64";
@@ -609,7 +609,7 @@ static ModuleHandleType OVR_FindLibraryPath(int requestedProductVersion, int req
             #endif
 
             #if defined(_WIN32)
-                int count = swprintf_s(developerDir, OVR_MAX_PATH, L"%hs\\LibOVR\\Lib\\Windows\\%hs\\%hs\\%hs\\", 
+                int count = swprintf_s(developerDir, OVR_MAX_PATH, L"%hs\\LibOVR\\Lib\\Windows\\%hs\\%hs\\%hs\\",
                                         sdkRoot, pArchDirName, pConfigDirName, pCompilerVersion);
             #elif defined(__APPLE__)
                 // Apple/XCode doesn't let you specify an arch in build paths, which is OK if we build a universal binary.
@@ -617,10 +617,10 @@ static ModuleHandleType OVR_FindLibraryPath(int requestedProductVersion, int req
                 int count = snprintf(developerDir, OVR_MAX_PATH, "%s/LibOVR/Lib/Mac/%s/",
                                         sdkRoot, pConfigDirName);
             #else
-                int count = snprintf(developerDir, OVR_MAX_PATH, "%s/LibOVR/Lib/Linux/%s/%s/", 
+                int count = snprintf(developerDir, OVR_MAX_PATH, "%s/LibOVR/Lib/Linux/%s/%s/",
                                         sdkRoot, pArchDirName, pConfigDirName);
             #endif
-            
+
             if((count < 0) || (count >= (int)OVR_MAX_PATH)) // If there was an error or capacity overflow... clear the string.
             {
                 developerDir[0] = '\0';
@@ -629,7 +629,7 @@ static ModuleHandleType OVR_FindLibraryPath(int requestedProductVersion, int req
     }
     #endif // OVR_ENABLE_DEVELOPER_SEARCH
 
-    {    
+    {
         FilePathCharType cwDir[OVR_MAX_PATH]; // Will be filled in below.
         FilePathCharType appDir[OVR_MAX_PATH];
         size_t i;
@@ -647,14 +647,14 @@ static ModuleHandleType OVR_FindLibraryPath(int requestedProductVersion, int req
 
         #elif defined(__APPLE__)
             // https://developer.apple.com/library/mac/documentation/Darwin/Reference/ManPages/man1/dyld.1.html
-        
+
             FilePathCharType        homeDir[OVR_MAX_PATH];
             FilePathCharType        homeFrameworkDir[OVR_MAX_PATH];
             const FilePathCharType* directoryArray[5];
             size_t                  homeDirLength = 0;
 
             const char* pHome = getenv("HOME"); // Try getting the HOME environment variable.
-        
+
             if (pHome)
             {
                 homeDirLength = OVR_strlcpy(homeDir, pHome, sizeof(homeDir));
@@ -663,18 +663,18 @@ static ModuleHandleType OVR_FindLibraryPath(int requestedProductVersion, int req
             {
                 // https://developer.apple.com/library/mac/documentation/Darwin/Reference/ManPages/man3/getpwuid_r.3.html
                 const long pwBufferSize = sysconf(_SC_GETPW_R_SIZE_MAX);
-        
+
                 if (pwBufferSize != -1)
                 {
                     char pwBuffer[pwBufferSize];
                     struct passwd  pw;
                     struct passwd* pwResult = NULL;
-                   
+
                     if ((getpwuid_r(getuid(), &pw, pwBuffer, pwBufferSize, &pwResult) == 0) && pwResult)
                         homeDirLength = OVR_strlcpy(homeDir, pw.pw_dir, sizeof(homeDir));
                 }
             }
-    
+
             if (homeDirLength)
             {
                 if (homeDir[homeDirLength - 1] == '/')
@@ -686,7 +686,7 @@ static ModuleHandleType OVR_FindLibraryPath(int requestedProductVersion, int req
             {
                 homeFrameworkDir[0] = '\0';
             }
-    
+
             directoryArray[0] = cwDir;
             directoryArray[1] = appDir;
             directoryArray[2] = homeFrameworkDir;           // ~/Library/Frameworks/
@@ -719,7 +719,7 @@ static ModuleHandleType OVR_FindLibraryPath(int requestedProductVersion, int req
         //     Linux:   libOVRRT<BIT_DEPTH>_<PRODUCT_VERSION>.so.<MAJOR_VERSION>                                   // The file on disk may contain a minor version number, but a symlink is used to map this major-only version to it.
 
         // Since we are manually loading the LibOVR dynamic library, we need to look in various locations for a file
-        // that matches our requirements. The functionality required is somewhat similar to the operating system's 
+        // that matches our requirements. The functionality required is somewhat similar to the operating system's
         // dynamic loader functionality. Each OS has some differences in how this is handled.
         // Future versions of this may iterate over all libOVRRT.so.* files in the directory and use the one that matches our requirements.
         //
@@ -747,7 +747,7 @@ static ModuleHandleType OVR_FindLibraryPath(int requestedProductVersion, int req
                 printfResult = snprintf(libraryPath, libraryPathCapacity, "%sLibOVRRT_%d.framework/Versions/%d/LibOVRRT_%d", directoryArray[i], requestedProductVersion, requestedMajorVersion, requestedProductVersion);
 
             #else // Unix
-                // Applications that depend on the OS (e.g. ld-linux / ldd) can rely on the library being in a common location 
+                // Applications that depend on the OS (e.g. ld-linux / ldd) can rely on the library being in a common location
                 // such as /usr/lib or can rely on the -rpath linker option to embed a path for the OS to check for the library,
                 // or can rely on the LD_LIBRARY_PATH environment variable being set. It's generally not recommended that applications
                 // depend on LD_LIBRARY_PATH be globally modified, partly due to potentialy security issues.
@@ -834,6 +834,7 @@ OVR_DECLARE_IMPORT(void, ovrHmd_DestroySwapTextureSet, (ovrHmd hmddesc, ovrSwapT
 OVR_DECLARE_IMPORT(void, ovrHmd_DestroyMirrorTexture, (ovrHmd hmddesc, ovrTexture* textureSet))
 OVR_DECLARE_IMPORT(ovrResult, ovrHmd_SetQueueAheadFraction, (ovrHmd hmddesc, float queueAheadFraction))
 
+
 static ovrResult OVR_LoadSharedLibrary(int requestedMinorVersion, int requestedPatchVersion)
 {
     FilePathCharType filePath[OVR_MAX_PATH];
@@ -861,7 +862,7 @@ static ovrResult OVR_LoadSharedLibrary(int requestedMinorVersion, int requestedP
     OVR_GETFUNCTION(ovrHmd_RecenterPose)
     OVR_GETFUNCTION(ovrHmd_GetTrackingState)
     OVR_GETFUNCTION(ovrHmd_GetFovTextureSize)
-    OVR_GETFUNCTION(ovrHmd_SubmitFrame)    
+    OVR_GETFUNCTION(ovrHmd_SubmitFrame)
     OVR_GETFUNCTION(ovrHmd_GetRenderDesc)
     OVR_GETFUNCTION(ovrHmd_GetFrameTiming)
     OVR_GETFUNCTION(ovrHmd_ResetFrameTiming)
@@ -893,7 +894,7 @@ static ovrResult OVR_LoadSharedLibrary(int requestedMinorVersion, int requestedP
 static void OVR_UnloadSharedLibrary()
 {
     // TBD: Currently there are some CAPI functions and code in the render shim that does
-    // not work with unloading the LibOVRRT. We also have the problem that LibOVR returns 
+    // not work with unloading the LibOVRRT. We also have the problem that LibOVR returns
     // a string pointer in the GetLastError function.
     //OVR_CloseLibrary(hLibOVR);
     //hLibOVR = NULL;
@@ -1284,6 +1285,7 @@ OVR_PUBLIC_FUNCTION(int) ovr_TraceMessage(int level, const char* message)
 
     return ovr_TraceMessagePtr(level, message);
 }
+
 
 
 

@@ -1,25 +1,7 @@
 /********************************************************************************//**
-
-\file OVR_CAPI_0_6_0.h
-\brief C Interface to the Oculus PC SDK tracking and rendering library.
-
+\file      OVR_CAPI_0_6_0.h
+\brief     C Interface to the Oculus PC SDK tracking and rendering library.
 \copyright Copyright 2014 Oculus VR, LLC All Rights reserved.
-\n
-Licensed under the Oculus VR Rift SDK License Version 3.2 (the "License");
-you may not use the Oculus VR Rift SDK except in compliance with the License,
-which is provided at the time of installation or download, or which
-otherwise accompanies this software in either electronic or hard copy form.
-\n
-You may obtain a copy of the License at
-\n
-http://www.oculusvr.com/licenses/LICENSE-3.2
-\n
-Unless required by applicable law or agreed to in writing, the Oculus VR SDK
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-
 ************************************************************************************/
 
 #ifndef OVR_CAPI_h  //   We don't use version numbers within this name, as all versioned variations of this file are currently mutually exclusive.
@@ -190,6 +172,65 @@ limitations under the License.
 #endif
 
 
+//-----------------------------------------------------------------------------------
+// ***** OVR_CC_HAS_FEATURE
+//
+// This is a portable way to use compile-time feature identification available 
+// with some compilers in a clean way. Direct usage of __has_feature in preprocessing
+// statements of non-supporting compilers results in a preprocessing error.
+//
+// Example usage:
+//     #if OVR_CC_HAS_FEATURE(is_pod)
+//         if(__is_pod(T)) // If the type is plain data then we can safely memcpy it.
+//             memcpy(&destObject, &srcObject, sizeof(object));
+//     #endif
+//
+#if !defined(OVR_CC_HAS_FEATURE)
+    #if defined(__clang__) // http://clang.llvm.org/docs/LanguageExtensions.html#id2
+        #define OVR_CC_HAS_FEATURE(x) __has_feature(x)
+    #else
+        #define OVR_CC_HAS_FEATURE(x) 0
+    #endif
+#endif
+
+
+// ------------------------------------------------------------------------
+// ***** OVR_STATIC_ASSERT
+//
+// Portable support for C++11 static_assert().
+// Acts as if the following were declared:
+//     void OVR_STATIC_ASSERT(bool const_expression, const char* msg);
+//
+// Example usage:
+//     OVR_STATIC_ASSERT(sizeof(int32_t) == 4, "int32_t expected to be 4 bytes.");
+
+#if !defined(OVR_STATIC_ASSERT)
+    #if !(defined(__cplusplus) && (__cplusplus >= 201103L)) /* Other */ && \
+        !(defined(__GXX_EXPERIMENTAL_CXX0X__)) /* GCC */ && \
+        !(defined(__clang__) && defined(__cplusplus) && OVR_CC_HAS_FEATURE(cxx_static_assert)) /* clang */ && \
+        !(defined(_MSC_VER) && (_MSC_VER >= 1600) && defined(__cplusplus)) /* VS2010+  */
+
+        #if !defined(OVR_SA_UNUSED)
+        #if defined(OVR_CC_GNU) || defined(OVR_CC_CLANG)
+            #define OVR_SA_UNUSED __attribute__((unused))
+        #else
+            #define OVR_SA_UNUSED
+        #endif
+        #define OVR_SA_PASTE(a,b) a##b
+        #define OVR_SA_HELP(a,b)  OVR_SA_PASTE(a,b)
+        #endif
+
+        #if defined(__COUNTER__)
+            #define OVR_STATIC_ASSERT(expression, msg) typedef char OVR_SA_HELP(compileTimeAssert, __COUNTER__) [((expression) != 0) ? 1 : -1] OVR_SA_UNUSED
+        #else
+            #define OVR_STATIC_ASSERT(expression, msg) typedef char OVR_SA_HELP(compileTimeAssert, __LINE__) [((expression) != 0) ? 1 : -1] OVR_SA_UNUSED
+        #endif
+
+    #else
+        #define OVR_STATIC_ASSERT(expression, msg) static_assert(expression, msg)
+    #endif
+#endif
+
 
 //-----------------------------------------------------------------------------------
 // ***** Padding
@@ -337,7 +378,6 @@ typedef enum ovrHmdType_
     ovrHmd_DK1       = 3,
     ovrHmd_DKHD      = 4,
     ovrHmd_DK2       = 6,
-    ovrHmd_BlackStar = 7,
     ovrHmd_CB        = 8,
     ovrHmd_Other     = 9,
     ovrHmd_EnumSize  = 0x7fffffff ///< \internal Force type int32_t.
@@ -359,12 +399,10 @@ typedef enum ovrHmdCaps_
     /// <I>There is no performance cost for this option. Oculus recommends exposing it to the user as an optional setting.</I>
     ovrHmdCap_LowPersistence    = 0x0080,
     ovrHmdCap_DynamicPrediction = 0x0200,   ///< <B>(read/write)</B> Adjusts prediction dynamically based on internally measured latency.
-    ovrHmdCap_NoVSync           = 0x1000,   ///< <B>(read/write)</B> Supports rendering without VSync for debugging.
 
     /// Indicates to the developer what caps they can and cannot modify. These are processed by the client.
     ovrHmdCap_Writable_Mask     = ovrHmdCap_LowPersistence |
-                                  ovrHmdCap_DynamicPrediction |
-                                  ovrHmdCap_NoVSync,
+                                  ovrHmdCap_DynamicPrediction,
 
     /// \internal Indicates to the developer what caps they can and cannot modify. These are processed by the service.
     ovrHmdCap_Service_Mask      = ovrHmdCap_LowPersistence |
@@ -905,6 +943,9 @@ OVR_PUBLIC_FUNCTION(int) ovr_TraceMessage(int level, const char* message);
 /// value is zero. If there is an error, a negative error ovrResult value is
 /// returned.
 ///
+/// ovrHmd_Detect can be called at any time between ovrInitiallize and ovrShutdown and 
+/// can be called multiple times or from multiple threads.
+///
 /// \return Returns an integer that specifies the number of HMDs currently present. Upon failure, OVR_SUCCESS(result) is false.
 ///
 /// \see ovrHmd_Create
@@ -914,8 +955,9 @@ OVR_PUBLIC_FUNCTION(ovrResult) ovrHmd_Detect();
 /// Creates a handle to an HMD which doubles as a description structure.
 ///
 /// Upon success the returned ovrHmd* must be freed with ovrHmd_Destroy.
-/// A second call to ovrHmd_Create with the same index as a previously
-/// successful call will result in an error return value.
+/// A second call to ovrHmd_Create or ovrHmd_CreateDebug with the same index as 
+/// a previously successful call will result in an error return value if the  
+/// previous Hmd has not been destroyed.
 ///
 /// \param[in] index A value in the range of [0 .. ovrHmd_Detect()-1].
 /// \param[out] pHmd Provides a pointer to an ovrHmd which will be written to upon success.
@@ -927,7 +969,11 @@ OVR_PUBLIC_FUNCTION(ovrResult) ovrHmd_Create(int index, ovrHmd* pHmd);
 
 /// Creates a fake HMD used for debugging only.
 ///
-/// This is not tied to specific hardware, but may be used to debug some of the related rendering.
+/// Upon success the returned ovrHmd* must be freed with ovrHmd_Destroy.
+/// A second call to ovrHmd_Create or ovrHmd_CreateDebug with the same index as 
+/// a previously successful call will result in an error return value if the  
+/// previous Hmd has not been destroyed.
+///
 /// \param[in] type Indicates the HMD type to emulate.
 /// \param[out] pHmd Provides a pointer to an ovrHmd which will be written to upon success.
 /// \return Returns an ovrResult indicating success or failure.
@@ -980,6 +1026,8 @@ OVR_PUBLIC_FUNCTION(void) ovrHmd_SetEnabledCaps(ovrHmd hmd, unsigned int hmdCaps
 /// Starts sensor sampling, enabling specified capabilities, described by ovrTrackingCaps.
 ///
 /// Use 0 for both supportedTrackingCaps and requiredTrackingCaps to disable tracking.
+/// ovrHmd_ConfigureTracking can be called multiple times with the same or different values
+/// for a given ovrHmd.
 ///
 /// \param[in] hmd Specifies an ovrHmd previously returned by ovrHmd_Create.
 ///
@@ -1030,6 +1078,7 @@ OVR_PUBLIC_FUNCTION(ovrTrackingState) ovrHmd_GetTrackingState(ovrHmd hmd, double
 
 
 ///@}
+
 
 
 
@@ -1268,7 +1317,7 @@ typedef union ovrLayer_Union_
 /// Destroys an ovrSwapTextureSet and frees all the resources associated with it.
 ///
 /// \param[in] hmd Specifies an ovrHmd previously returned by ovrHmd_Create.
-/// \param[in] textureSet Specifies the ovrSwapTextureSet to destroy.
+/// \param[in] textureSet Specifies the ovrSwapTextureSet to destroy. If it is NULL then this function has no effect.
 ///
 /// \see ovrHmd_CreateSwapTextureSetD3D11, ovrHmd_CreateSwapTextureSetGL
 ///
@@ -1278,7 +1327,7 @@ OVR_PUBLIC_FUNCTION(void) ovrHmd_DestroySwapTextureSet(ovrHmd hmd, ovrSwapTextur
 /// Destroys a mirror texture previously created by one of the mirror texture creation functions.
 ///
 /// \param[in] hmd Specifies an ovrHmd previously returned by ovrHmd_Create.
-/// \param[in] mirrorTexture Specifies the ovrTexture to destroy.
+/// \param[in] mirrorTexture Specifies the ovrTexture to destroy. If it is NULL then this function has no effect.
 ///
 /// \see ovrHmd_CreateMirrorTextureD3D11, ovrHmd_CreateMirrorTextureGL
 ///
@@ -1325,8 +1374,8 @@ OVR_PUBLIC_FUNCTION(ovrEyeRenderDesc) ovrHmd_GetRenderDesc(ovrHmd hmd,
 ///
 /// \param[in] hmd Specifies an ovrHmd previously returned by ovrHmd_Create.
 ///
-/// \param[in] frameIndex Specifies the targeted frame index, or 0, to refer to one frame after the last
-///        time ovrHmd_SubmitFrame was called.
+/// \param[in] frameIndex Specifies the targeted application frame index, or 0 to refer to one frame 
+///        after the last time ovrHmd_SubmitFrame was called.
 ///
 /// \param[in] viewScaleDesc Provides additional information needed only if layerPtrList contains
 ///        a ovrLayerType_QuadInWorld or ovrLayerType_QuadHeadLocked. If NULL, a default
@@ -1420,6 +1469,25 @@ OVR_PUBLIC_FUNCTION(void) ovrHmd_ResetFrameTiming(ovrHmd hmd, unsigned int frame
 /// \see ovrPoseStatef, ovrSensorData, ovrFrameTiming
 ///
 OVR_PUBLIC_FUNCTION(double) ovr_GetTimeInSeconds();
+
+/// Performance HUD enables the HMD user to see information critical to
+/// the real-time operation of the VR application such as latency timing,
+/// and CPU & GPU performance metrics
+/// 
+///     App can toggle performance HUD modes as such:
+///     \code{.cpp}
+///         ovrPerfHudMode PerfHudMode = ovrPerfHud_LatencyTiming;
+///         ovrHmd_SetInt(Hmd, "PerfHudMode", (int)PerfHudMode);
+///     \endcode
+///
+typedef enum ovrPerfHudMode_
+{
+    ovrPerfHud_Off = 0,                ///< Turns off the performance HUD
+    ovrPerfHud_LatencyTiming = 1,      ///< Shows latency related timing info
+    ovrPerfHud_RenderTiming = 2,       ///< Shows CPU & GPU timing info
+    ovrPerfHud_Count = 2,              ///< \internal Count of enumerated elements.
+    ovrPerfHud_EnumSize = 0x7fffffff   ///< \internal Force type int32_t.
+} ovrPerfHudMode;
 
 ///@}
 
@@ -1560,57 +1628,57 @@ OVR_PUBLIC_FUNCTION(ovrBool) ovrHmd_SetString(ovrHmd hmd, const char* propertyNa
 // These checks ensure that the compiler settings being used will be compatible
 // with with pre-built dynamic library provided with the runtime.
 
-OVR_CPP(static_assert(sizeof(ovrBool) == 1,         "ovrBool size mismatch"));
-OVR_CPP(static_assert(sizeof(ovrVector2i) == 4 * 2, "ovrVector2i size mismatch"));
-OVR_CPP(static_assert(sizeof(ovrSizei) == 4 * 2,    "ovrSizei size mismatch"));
-OVR_CPP(static_assert(sizeof(ovrRecti) == sizeof(ovrVector2i) + sizeof(ovrSizei), "ovrRecti size mismatch"));
-OVR_CPP(static_assert(sizeof(ovrQuatf) == 4 * 4,    "ovrQuatf size mismatch"));
-OVR_CPP(static_assert(sizeof(ovrVector2f) == 4 * 2, "ovrVector2f size mismatch"));
-OVR_CPP(static_assert(sizeof(ovrVector3f) == 4 * 3, "ovrVector3f size mismatch"));
-OVR_CPP(static_assert(sizeof(ovrMatrix4f) == 4 * 16, "ovrMatrix4f size mismatch"));
+OVR_STATIC_ASSERT(sizeof(ovrBool) == 1,         "ovrBool size mismatch");
+OVR_STATIC_ASSERT(sizeof(ovrVector2i) == 4 * 2, "ovrVector2i size mismatch");
+OVR_STATIC_ASSERT(sizeof(ovrSizei) == 4 * 2,    "ovrSizei size mismatch");
+OVR_STATIC_ASSERT(sizeof(ovrRecti) == sizeof(ovrVector2i) + sizeof(ovrSizei), "ovrRecti size mismatch");
+OVR_STATIC_ASSERT(sizeof(ovrQuatf) == 4 * 4,    "ovrQuatf size mismatch");
+OVR_STATIC_ASSERT(sizeof(ovrVector2f) == 4 * 2, "ovrVector2f size mismatch");
+OVR_STATIC_ASSERT(sizeof(ovrVector3f) == 4 * 3, "ovrVector3f size mismatch");
+OVR_STATIC_ASSERT(sizeof(ovrMatrix4f) == 4 * 16, "ovrMatrix4f size mismatch");
 
-OVR_CPP(static_assert(sizeof(ovrPosef) == (7 * 4),       "ovrPosef size mismatch"));
-OVR_CPP(static_assert(sizeof(ovrPoseStatef) == (22 * 4), "ovrPoseStatef size mismatch"));
-OVR_CPP(static_assert(sizeof(ovrFovPort) == (4 * 4),     "ovrFovPort size mismatch"));
+OVR_STATIC_ASSERT(sizeof(ovrPosef) == (7 * 4),       "ovrPosef size mismatch");
+OVR_STATIC_ASSERT(sizeof(ovrPoseStatef) == (22 * 4), "ovrPoseStatef size mismatch");
+OVR_STATIC_ASSERT(sizeof(ovrFovPort) == (4 * 4),     "ovrFovPort size mismatch");
 
-OVR_CPP(static_assert(sizeof(ovrHmdCaps) == 4,      "ovrHmdCaps size mismatch"));
-OVR_CPP(static_assert(sizeof(ovrTrackingCaps) == 4, "ovrTrackingCaps size mismatch"));
-OVR_CPP(static_assert(sizeof(ovrEyeType) == 4,      "ovrEyeType size mismatch"));
-OVR_CPP(static_assert(sizeof(ovrHmdType) == 4,      "ovrHmdType size mismatch"));
+OVR_STATIC_ASSERT(sizeof(ovrHmdCaps) == 4,      "ovrHmdCaps size mismatch");
+OVR_STATIC_ASSERT(sizeof(ovrTrackingCaps) == 4, "ovrTrackingCaps size mismatch");
+OVR_STATIC_ASSERT(sizeof(ovrEyeType) == 4,      "ovrEyeType size mismatch");
+OVR_STATIC_ASSERT(sizeof(ovrHmdType) == 4,      "ovrHmdType size mismatch");
 
-OVR_CPP(static_assert(sizeof(ovrSensorData) == (11 * 4), "ovrSensorData size mismatch"));
-OVR_CPP(static_assert(sizeof(ovrTrackingState) == 
+OVR_STATIC_ASSERT(sizeof(ovrSensorData) == (11 * 4), "ovrSensorData size mismatch");
+OVR_STATIC_ASSERT(sizeof(ovrTrackingState) == 
                       sizeof(ovrPoseStatef) + 4 + 2 * sizeof(ovrPosef) + sizeof(ovrSensorData) + 2 * 4,
-                      "ovrTrackingState size mismatch"));
-OVR_CPP(static_assert(sizeof(ovrFrameTiming) == 3 * 8, "ovrFrameTiming size mismatch"));
+                      "ovrTrackingState size mismatch");
+OVR_STATIC_ASSERT(sizeof(ovrFrameTiming) == 3 * 8, "ovrFrameTiming size mismatch");
 
-OVR_CPP(static_assert(sizeof(ovrRenderAPIType) == 4, "ovrRenderAPIType size mismatch"));
+OVR_STATIC_ASSERT(sizeof(ovrRenderAPIType) == 4, "ovrRenderAPIType size mismatch");
 
-OVR_CPP(static_assert(sizeof(ovrTextureHeader) == sizeof(ovrRenderAPIType) + sizeof(ovrSizei),
-                      "ovrTextureHeader size mismatch"));
-OVR_CPP(static_assert(sizeof(ovrTexture) == sizeof(ovrTextureHeader) OVR_ON64(+4) + sizeof(uintptr_t) * 8, 
-                      "ovrTexture size mismatch"));
+OVR_STATIC_ASSERT(sizeof(ovrTextureHeader) == sizeof(ovrRenderAPIType) + sizeof(ovrSizei),
+                      "ovrTextureHeader size mismatch");
+OVR_STATIC_ASSERT(sizeof(ovrTexture) == sizeof(ovrTextureHeader) OVR_ON64(+4) + sizeof(uintptr_t) * 8, 
+                      "ovrTexture size mismatch");
 
-OVR_CPP(static_assert(sizeof(ovrStatusBits) == 4, "ovrStatusBits size mismatch"));
+OVR_STATIC_ASSERT(sizeof(ovrStatusBits) == 4, "ovrStatusBits size mismatch");
 
-OVR_CPP(static_assert(sizeof(ovrEyeRenderDesc) == sizeof(ovrEyeType) + sizeof(ovrFovPort) + sizeof(ovrRecti) +
+OVR_STATIC_ASSERT(sizeof(ovrEyeRenderDesc) == sizeof(ovrEyeType) + sizeof(ovrFovPort) + sizeof(ovrRecti) +
                                                   sizeof(ovrVector2f) + sizeof(ovrVector3f),
-                      "ovrEyeRenderDesc size mismatch"));
-OVR_CPP(static_assert(sizeof(ovrTimewarpProjectionDesc) == 4 * 3, "ovrTimewarpProjectionDesc size mismatch"));
+                      "ovrEyeRenderDesc size mismatch");
+OVR_STATIC_ASSERT(sizeof(ovrTimewarpProjectionDesc) == 4 * 3, "ovrTimewarpProjectionDesc size mismatch");
 
-OVR_CPP(static_assert(sizeof(ovrInitFlags) == 4, "ovrInitFlags size mismatch"));
-OVR_CPP(static_assert(sizeof(ovrLogLevel) == 4, "ovrLogLevel size mismatch"));
+OVR_STATIC_ASSERT(sizeof(ovrInitFlags) == 4, "ovrInitFlags size mismatch");
+OVR_STATIC_ASSERT(sizeof(ovrLogLevel) == 4, "ovrLogLevel size mismatch");
 
-OVR_CPP(static_assert(sizeof(ovrInitParams) == sizeof(ovrLogCallback) + 4 * 3 OVR_ON64(+4),
-                      "ovrInitParams size mismatch"));
+OVR_STATIC_ASSERT(sizeof(ovrInitParams) == sizeof(ovrLogCallback) + 4 * 3 OVR_ON64(+4),
+                      "ovrInitParams size mismatch");
 
-OVR_CPP(static_assert(sizeof(ovrHmdDesc) == OVR_ON64(4 +)
+OVR_STATIC_ASSERT(sizeof(ovrHmdDesc) == OVR_ON64(4 +)
     sizeof(struct ovrHmdStruct*) + sizeof(ovrHmdType) // Handle - Type
     + sizeof(void*) * 2 + 2 + 2 + 24 // ProductName - SerialNumber
     + 2 + 2 + 4 * 4 // FirmwareMajor - CameraFrustumFarZInMeters
     + 4 * 2 + sizeof(ovrFovPort) * 4 // HmdCaps - MaxEyeFov
     + sizeof(ovrEyeType)* 2 + sizeof(ovrSizei)  // EyeRenderOrder - Resolution
-    , "ovrHmdDesc size mismatch"));
+    , "ovrHmdDesc size mismatch");
 
 
 // -----------------------------------------------------------------------------------

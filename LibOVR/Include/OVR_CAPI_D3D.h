@@ -1,27 +1,7 @@
 /********************************************************************************//**
-
-\file OVR_CAPI_D3D.h
-\brief D3D specific structures used by the CAPI interface.
-\date November 7, 2013
-\author Michael Antonov
-
+\file      OVR_CAPI_D3D.h
+\brief     D3D specific structures used by the CAPI interface.
 \copyright Copyright 2014 Oculus VR, LLC All Rights reserved.
-\n
-Licensed under the Oculus VR Rift SDK License Version 3.2 (the "License");
-you may not use the Oculus VR Rift SDK except in compliance with the License, 
-which is provided at the time of installation or download, or which 
-otherwise accompanies this software in either electronic or hard copy form.
-\n
-You may obtain a copy of the License at
-\n
-http://www.oculusvr.com/licenses/LICENSE-3.2 
-\n
-Unless required by applicable law or agreed to in writing, the Oculus VR SDK 
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-
 ************************************************************************************/
 
 #ifndef OVR_CAPI_D3D_h
@@ -54,10 +34,8 @@ typedef struct OVR_ALIGNAS(OVR_PTR_SIZE) ovrD3D11TextureData_
     ID3D11ShaderResourceView* pSRView;          ///< The D3D11 shader resource view for this texture.
 } ovrD3D11TextureData;
 
-#if defined(__cplusplus)
-    static_assert(sizeof(ovrTexture) >= sizeof(ovrD3D11TextureData), "Insufficient size.");
-    static_assert(sizeof(ovrD3D11TextureData) == sizeof(ovrTextureHeader) OVR_ON64(+ 4) + 2 * OVR_PTR_SIZE, "size mismatch");
-#endif
+OVR_STATIC_ASSERT(sizeof(ovrTexture) >= sizeof(ovrD3D11TextureData), "Insufficient size.");
+OVR_STATIC_ASSERT(sizeof(ovrD3D11TextureData) == sizeof(ovrTextureHeader) OVR_ON64(+4) + 2 * OVR_PTR_SIZE, "size mismatch");
 
 
 /// Contains D3D11-specific texture information.
@@ -76,10 +54,13 @@ union ovrD3D11Texture
 
 /// Create Texture Set suitable for use with D3D11.
 ///
+/// Multiple calls to ovrHmd_CreateSwapTextureSetD3D11 for the same ovrHmd is supported, but applications
+/// cannot rely on switching between ovrSwapTextureSets at runtime without a performance penalty.
+///
 /// \param[in]  hmd Specifies an ovrHmd previously returned by ovrHmd_Create.
 /// \param[in]  device Specifies the associated ID3D11Device, which must be the one that the textures will be used with in the application's process.
 /// \param[in]  desc Specifies requested texture properties.
-/// \param[out] outTextureSet Specifies the created ovrSwapTextureSet, which will be valid only upon a successful return value.
+/// \param[out] outTextureSet Specifies the created ovrSwapTextureSet, which will be valid upon a successful return value, else it will be NULL.
 ///             This texture set must be eventually destroyed via ovrHmd_DestroySwapTextureSet before destroying the HMD with ovrHmd_Destroy.
 ///
 /// \return Returns an ovrResult indicating success or failure. In the case of failure, use 
@@ -94,10 +75,13 @@ OVR_PUBLIC_FUNCTION(ovrResult) ovrHmd_CreateSwapTextureSetD3D11(ovrHmd hmd,
 
 /// Create Mirror Texture which is auto-refreshed to mirror Rift contents produced by this application.
 ///
+/// A second call to ovrHmd_CreateMirrorTextureD3D11 for a given ovrHmd before destroying the first one
+/// is not supported and will result in an error return.
+///
 /// \param[in]  hmd Specifies an ovrHmd previously returned by ovrHmd_Create.
 /// \param[in]  device Specifies the associated ID3D11Device, which must be the one that the textures will be used with in the application's process.
 /// \param[in]  desc Specifies requested texture properties.
-/// \param[out] outMirrorTexture Specifies the created ovrTexture, which will be valid only upon a successful return value.
+/// \param[out] outMirrorTexture Specifies the created ovrTexture, which will be valid upon a successful return value, else it will be NULL.
 ///             This texture must be eventually destroyed via ovrHmd_DestroyMirrorTexture before destroying the HMD with ovrHmd_Destroy.
 ///
 /// \return Returns an ovrResult indicating success or failure. In the case of failure, use 
@@ -109,5 +93,7 @@ OVR_PUBLIC_FUNCTION(ovrResult) ovrHmd_CreateMirrorTextureD3D11(ovrHmd hmd,
                                                                ID3D11Device* device,
                                                                const D3D11_TEXTURE2D_DESC* desc,
                                                                ovrTexture** outMirrorTexture);
+
+
 
 #endif    // OVR_CAPI_h

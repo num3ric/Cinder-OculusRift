@@ -87,20 +87,31 @@ Matrix4f CreateProjection( bool rightHanded, bool isOpenGL, FovPort tanHalfFov, 
 
     if (farAtInfinity)
     {
-        projection.M[2][2] = 0.0f;
-        projection.M[2][3] = zNear;
+        if (isOpenGL)
+        {
+            // It's not clear this makes sense for OpenGL - you don't get the same precision benefits you do in D3D.
+            projection.M[2][2] = -handednessScale;
+            projection.M[2][3] = 2.0f * zNear;
+        }
+        else
+        {
+            projection.M[2][2] = 0.0f;
+            projection.M[2][3] = zNear;
+        }
     }
     else
     {
         if (isOpenGL)
         {
-            projection.M[2][2] = -handednessScale * (flipZ ? 1.0f : -1.0f) * (zNear + zFar) / (zFar - zNear);
-            projection.M[2][3] = -2.0f * ((flipZ ? -zFar : zFar) * zNear) / (zFar - zNear);
+            // Clip range is [-w,+w], so 0 is at the middle of the range.
+            projection.M[2][2] = -handednessScale * (flipZ ? -1.0f : 1.0f) * (zNear + zFar) / (zNear - zFar);
+            projection.M[2][3] =                    2.0f * ((flipZ ? -zFar : zFar) * zNear) / (zNear - zFar);
         }
         else
         {
-            projection.M[2][2] = -handednessScale * (flipZ ? -zNear : zFar) / (zNear - zFar);
-            projection.M[2][3] = ((flipZ ? -zFar : zFar) * zNear) / (zNear - zFar);
+            // Clip range is [0,+w], so 0 is at the start of the range.
+            projection.M[2][2] = -handednessScale * (flipZ ? -zNear : zFar)                 / (zNear - zFar);
+            projection.M[2][3] =                           ((flipZ ? -zFar : zFar) * zNear) / (zNear - zFar);
         }
     }
 

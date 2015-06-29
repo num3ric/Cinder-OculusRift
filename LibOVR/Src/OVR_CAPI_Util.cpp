@@ -43,12 +43,39 @@ ovrMatrix4f ovrMatrix4f_Projection(ovrFovPort fov, float znear, float zfar, unsi
     return OVR::CreateProjection(rightHanded , isOpenGL, fov, OVR::StereoEye_Center, znear, zfar, flipZ, farAtInfinity);
 }
 
-ovrTimewarpProjectionDesc ovrTimewarpProjectionDesc_FromProjection(ovrMatrix4f Projection)
+ovrTimewarpProjectionDesc ovrTimewarpProjectionDesc_FromProjection(ovrMatrix4f Projection, unsigned int projectionModFlags)
 {
     ovrTimewarpProjectionDesc res;
     res.Projection22 = Projection.M[2][2];
     res.Projection23 = Projection.M[2][3];
     res.Projection32 = Projection.M[3][2];
+
+    if ((res.Projection32 != 1.0f) && (res.Projection32 != -1.0f))
+    {
+        // This is a very strange projection matrix, and probably won't work.
+        // If you need it to work, please contact Oculus and let us know your usage scenario.
+    }
+
+    if ( ( projectionModFlags & ovrProjection_ClipRangeOpenGL ) != 0 )
+    {
+        // Internally we use the D3D range of [0,+w] not the OGL one of [-w,+w], so we need to convert one to the other.
+        // Note that the values in the depth buffer, and the actual linear depth we want is the same for both APIs,
+        // the difference is purely in the values inside the projection matrix.
+
+        // D3D does this:
+        // depthBuffer =             ( ProjD3D.M[2][2] * linearDepth + ProjD3D.M[2][3] ) / ( linearDepth * ProjD3D.M[3][2] );
+        // OGL does this:
+        // depthBuffer = 0.5 + 0.5 * ( ProjOGL.M[2][2] * linearDepth + ProjOGL.M[2][3] ) / ( linearDepth * ProjOGL.M[3][2] );
+
+        // Therefore:
+        // ProjD3D.M[2][2] = 0.5 * ( ProjOGL.M[2][2] + ProjOGL.M[3][2] );
+        // ProjD3D.M[2][3] = 0.5 *   ProjOGL.M[2][3];
+        // ProjD3D.M[3][2] =         ProjOGL.M[3][2];
+
+        res.Projection22 = 0.5f * ( Projection.M[2][2] + Projection.M[3][2] );
+        res.Projection23 = 0.5f *   Projection.M[2][3];
+        res.Projection32 =          Projection.M[3][2];
+    }
     return res;
 }
 

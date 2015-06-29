@@ -1,29 +1,7 @@
-/************************************************************************************
-
-PublicHeader:   OVR_Kernel.h
-Filename    :   OVR_Math.h
-Content     :   Implementation of 3D primitives such as vectors, matrices.
-Created     :   September 4, 2012
-Authors     :   Andrew Reisse, Michael Antonov, Steve LaValle, 
-                Anna Yershova, Max Katsev, Dov Katz
-
-Copyright   :   Copyright 2014 Oculus VR, LLC All Rights reserved.
-
-Licensed under the Oculus VR Rift SDK License Version 3.2 (the "License"); 
-you may not use the Oculus VR Rift SDK except in compliance with the License, 
-which is provided at the time of installation or download, or which 
-otherwise accompanies this software in either electronic or hard copy form.
-
-You may obtain a copy of the License at
-
-http://www.oculusvr.com/licenses/LICENSE-3.2 
-
-Unless required by applicable law or agreed to in writing, the Oculus VR SDK 
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-
+/********************************************************************************//**
+\file      OVR_Math.h
+\brief     Implementation of 3D primitives such as vectors, matrices.
+\copyright Copyright 2014 Oculus VR, LLC All Rights reserved.
 *************************************************************************************/
 
 #ifndef OVR_Math_h
@@ -864,6 +842,10 @@ public:
             s = T(1) / s;
         return *this * s;
     }
+
+    // Linearly interpolates from this vector to another.
+    // Factor should be between 0.0 and 1.0, with 0 giving full value to this.
+    Vector4 Lerp(const Vector4& b, T f) const    { return *this*(T(1) - f) + b*f; }
 };
 
 typedef Vector4<float>  Vector4f;
@@ -1154,7 +1136,7 @@ public:
         if (sinHalfSquared < T(.0037))			// =~ sin(7/2 degrees)^2
         {
             // Max rotation magnitude error is (1 - 2*halfAngle/sin(halfAngle)) = -.0044 radians (.06%) at 7 degrees rotation
-            s = T(2);
+            s = T(2) * Sign(w);
         }
         else
         {
@@ -1349,7 +1331,7 @@ public:
     }
 
     // Angle between two quaternions in radians
-    T       Angle(const Quat& q) const
+    T       Angle(const Quat& q = Identity()) const
     {
         return 2 * Acos(Abs(Dot(q)));
     }
@@ -1528,15 +1510,14 @@ public:
     //	W2 = cross(omega, omega1)/12*dt^2 % (= -cross(omega_dot, omega)/12*dt^3)
     // Terms 3 and beyond are vanishingly small:
     //  W3 = cross(omega_dot, cross(omega_dot, omega))/240*dt^5 
-    Quat TimeIntegrate(Vector3<T> angularVelocity, Vector3<T> angularAcceleration, T dt, T dtAcceleration) const
+    //
+    Quat TimeIntegrate(Vector3<T> angularVelocity, Vector3<T> angularAcceleration, T dt) const
     {
-        (void)dtAcceleration;
-        
         const Vector3<T>& omega = angularVelocity;
         const Vector3<T>& omegaDot = angularAcceleration;
 
-        Vector3<T> omega1 = (omega + omegaDot * dtAcceleration);
-        Vector3<T> W = T(0.5)*dt*((omega + omega1) / T(2) + omega.Cross(omega1)*(dt * T(1)/T(12)));
+        Vector3<T> omega1 = (omega + omegaDot * dt);
+        Vector3<T> W = ( (omega + omega1) + omega.Cross(omega1) * (dt/T(6)) ) * (dt/T(2));
 
         // FromRotationVector(v) is exp(v*.5)
         return (*this * FastFromRotationVector(W, false)).Normalized();
@@ -1783,10 +1764,10 @@ public:
 
     Pose TimeIntegrate(const Vector3<T>& linearVelocity, const Vector3<T>& linearAcceleration,
                        const Vector3<T>& angularVelocity, const Vector3<T>& angularAcceleration,
-                       T dt, T dtAcceleration) const
+                       T dt) const
     {
-        return Pose(Rotation.TimeIntegrate(angularVelocity, angularAcceleration, dt, dtAcceleration),
-                    Translation + linearVelocity*dt + linearAcceleration*dt*dt / T(2));
+        return Pose(Rotation.TimeIntegrate(angularVelocity, angularAcceleration, dt),
+                    Translation + linearVelocity*dt + linearAcceleration*dt*dt * T(0.5));
     }
 };
 
@@ -2528,10 +2509,10 @@ public:
     static Matrix4 Ortho2D(T w, T h)
     {
         Matrix4 m;
-        m.M[0][0] = 2.0/w;
-        m.M[1][1] = -2.0/h;
-        m.M[0][3] = -1.0;
-        m.M[1][3] = 1.0;
+        m.M[0][0] = T(2.0)/w;
+        m.M[1][1] = T(-2.0)/h;
+        m.M[0][3] = T(-1.0);
+        m.M[1][3] = T(1.0);
         m.M[2][2] = 0;
         return m;
     }

@@ -1,16 +1,7 @@
 /********************************************************************************//**
-
-\file OVR_CAPI_GL.h
-\brief GL specific structures used by the CAPI interface.
-\date November 7, 2013
-\author Lee Cooper
-
+\file      OVR_CAPI_GL.h
+\brief     OpenGL-specific structures used by the CAPI interface.
 \copyright Copyright 2013 Oculus VR, LLC. All Rights reserved.
-\n
-Use of this software is subject to the terms of the Oculus Inc license
-agreement provided at the time of installation or download, or which
-otherwise accompanies this software in either electronic or hard copy form.
-
 ************************************************************************************/
 
 #ifndef OVR_CAPI_GL_h
@@ -18,14 +9,9 @@ otherwise accompanies this software in either electronic or hard copy form.
 
 #include "OVR_CAPI.h"
 
-#if defined(OVR_OS_WIN32)
-    #include <Windows.h>
-    #include <gl/GL.h>
-#elif defined(__APPLE__)
-    #include <OpenGL/gl.h>
-#else
-    #include <GL/gl.h>
-#endif
+
+// We avoid gl.h #includes here which interferes with some users' use of alternatives and typedef GLuint manually.
+typedef unsigned int GLuint;
 
 
 #if defined(_MSC_VER)
@@ -40,10 +26,8 @@ typedef struct ovrGLTextureData_s
     GLuint           TexId;     ///< The OpenGL name for this texture.
 } ovrGLTextureData;
 
-#if defined(__cplusplus)
-    static_assert(sizeof(ovrTexture) >= sizeof(ovrGLTextureData), "Insufficient size.");
-    static_assert(sizeof(ovrGLTextureData) == sizeof(ovrTextureHeader) + 4, "size mismatch");
-#endif
+OVR_STATIC_ASSERT(sizeof(ovrTexture) >= sizeof(ovrGLTextureData), "Insufficient size.");
+OVR_STATIC_ASSERT(sizeof(ovrGLTextureData) == sizeof(ovrTextureHeader) + 4, "size mismatch");
 
 /// Contains OpenGL-specific texture information.
 typedef union ovrGLTexture_s
@@ -61,11 +45,14 @@ typedef union ovrGLTexture_s
 
 /// Creates a Texture Set suitable for use with OpenGL.
 ///
+/// Multiple calls to ovrHmd_CreateSwapTextureSetD3D11 for the same ovrHmd is supported, but applications
+/// cannot rely on switching between ovrSwapTextureSets at runtime without a performance penalty.
+///
 /// \param[in]  hmd Specifies an ovrHmd previously returned by ovrHmd_Create.
 /// \param[in]  format Specifies the texture format.
 /// \param[in]  width Specifies the requested texture width.
 /// \param[in]  height Specifies the requested texture height.
-/// \param[out] outTextureSet Specifies the created ovrSwapTextureSet, which will be valid only upon a successful return value.
+/// \param[out] outTextureSet Specifies the created ovrSwapTextureSet, which will be valid upon a successful return value, else it will be NULL.
 ///             This texture set must be eventually destroyed via ovrHmd_DestroySwapTextureSet before destroying the HMD with ovrHmd_Destroy.
 ///
 /// \return Returns an ovrResult indicating success or failure. In the case of failure, use 
@@ -80,11 +67,14 @@ OVR_PUBLIC_FUNCTION(ovrResult) ovrHmd_CreateSwapTextureSetGL(ovrHmd hmd, GLuint 
 
 /// Creates a Mirror Texture which is auto-refreshed to mirror Rift contents produced by this application.
 ///
+/// A second call to ovrHmd_CreateMirrorTextureGL for a given ovrHmd  before destroying the first one
+/// is not supported and will result in an error return.
+///
 /// \param[in]  hmd Specifies an ovrHmd previously returned by ovrHmd_Create.
 /// \param[in]  format Specifies the texture format.
 /// \param[in]  width Specifies the requested texture width.
 /// \param[in]  height Specifies the requested texture height.
-/// \param[out] outMirrorTexture Specifies the created ovrTexture, which will be valid only upon a successful return value.
+/// \param[out] outMirrorTexture Specifies the created ovrSwapTexture, which will be valid upon a successful return value, else it will be NULL.
 ///             This texture must be eventually destroyed via ovrHmd_DestroyMirrorTexture before destroying the HMD with ovrHmd_Destroy.
 ///
 /// \return Returns an ovrResult indicating success or failure. In the case of failure, use 
@@ -95,6 +85,5 @@ OVR_PUBLIC_FUNCTION(ovrResult) ovrHmd_CreateSwapTextureSetGL(ovrHmd hmd, GLuint 
 OVR_PUBLIC_FUNCTION(ovrResult) ovrHmd_CreateMirrorTextureGL(ovrHmd hmd, GLuint format,
                                                             int width, int height,
                                                             ovrTexture** outMirrorTexture);
-
 
 #endif    // OVR_CAPI_GL_h

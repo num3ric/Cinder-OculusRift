@@ -1,25 +1,7 @@
 /********************************************************************************//**
-
-\file  OVR_CAPI_Util.h
-\brief This header provides LibOVR utility function declarations
-
+\file      OVR_CAPI_Util.h
+\brief     This header provides LibOVR utility function declarations
 \copyright Copyright 2015 Oculus VR, LLC All Rights reserved.
-\n
-Licensed under the Oculus VR Rift SDK License Version 3.2 (the "License"); 
-you may not use the Oculus VR Rift SDK except in compliance with the License, 
-which is provided at the time of installation or download, or which 
-otherwise accompanies this software in either electronic or hard copy form.
-\n
-You may obtain a copy of the License at
-\n
-http://www.oculusvr.com/licenses/LICENSE-3.2 
-\n
-Unless required by applicable law or agreed to in writing, the Oculus VR SDK 
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-
 *************************************************************************************/
 
 #ifndef OVR_CAPI_Util_h
@@ -81,10 +63,11 @@ OVR_PUBLIC_FUNCTION(ovrMatrix4f) ovrMatrix4f_Projection(ovrFovPort fov, float zn
 /// Extracts the required data from the result of ovrMatrix4f_Projection.
 ///
 /// \param[in] projection Specifies the project matrix from which to extract ovrTimewarpProjectionDesc.
+/// \param[in] projectionModFlags A combination of the ovrProjectionModifier flags.
 /// \return Returns the extracted ovrTimewarpProjectionDesc.
 /// \see ovrTimewarpProjectionDesc
 ///
-OVR_PUBLIC_FUNCTION(ovrTimewarpProjectionDesc) ovrTimewarpProjectionDesc_FromProjection(ovrMatrix4f projection);
+OVR_PUBLIC_FUNCTION(ovrTimewarpProjectionDesc) ovrTimewarpProjectionDesc_FromProjection(ovrMatrix4f projection, unsigned int projectionModFlags);
 
 
 /// Generates an orthographic sub-projection.

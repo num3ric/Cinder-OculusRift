@@ -233,6 +233,7 @@
       <AdditionalOptions>/FC %(AdditionalOptions)</AdditionalOptions>
       <ExceptionHandling>false</ExceptionHandling>
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
+      <ForcedIncludeFiles />
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>

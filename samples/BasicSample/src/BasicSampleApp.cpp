@@ -1,6 +1,3 @@
-
-#include "CinderOculus.h"
-
 #include "cinder/app/App.h"
 #include "cinder/app/RendererGl.h"
 #include "cinder/gl/gl.h"
@@ -9,6 +6,8 @@
 #include "cinder/Log.h"
 #include "cinder/CameraUi.h"
 #include "cinder/Utilities.h"
+
+#include "CinderOculus.h"
 
 using namespace ci;
 using namespace ci::app;
@@ -41,14 +40,6 @@ BasicSampleApp::BasicSampleApp()
 : mViewerPosition{ vec3( 0, 0, 1 ) }
 , mCameraUi( &mCamera, app::getWindow() )
 {
-	if( mRift.initialize( getWindow() ) ) {
-		CameraPersp host;
-		host.setEyePoint( mViewerPosition );
-		host.lookAt( vec3( 0 ) );
-		mRift.setHostCamera( host );
-		//mRift.setScreenPercentage( 1.25f );
-	}
-	
 	try {
 		mShader = gl::GlslProg::create( gl::GlslProg::Format().vertex( loadAsset( "phong.vert" ) ).fragment( loadAsset( "phong.frag" ) ) );
 	}
@@ -57,6 +48,14 @@ BasicSampleApp::BasicSampleApp()
 		quit();
 	}
 	mTeapot = gl::Batch::create( geom::Teapot().subdivisions( 12 ), mShader );
+
+	if( mRift.initialize( getWindow() ) ) {
+		CameraPersp host;
+		host.setEyePoint( mViewerPosition );
+		host.lookAt( vec3( 0 ) );
+		mRift.setHostCamera( host );
+		//mRift.setScreenPercentage( 1.25f );
+	}
 
 	// Setup camera for the debug (main) window.
 	mCamera.setEyePoint( vec3( 0, 2, 5 ) );

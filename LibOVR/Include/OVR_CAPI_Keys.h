@@ -1,27 +1,7 @@
-/************************************************************************************
-
-Filename    :   OVR_CAPI.h
-Content     :   Keys for CAPI calls
-Created     :   September 25, 2014
-Authors     :   
-
-Copyright   :   Copyright 2014 Oculus VR, LLC All Rights reserved.
-
-Licensed under the Oculus VR Rift SDK License Version 3.2 (the "License");
-you may not use the Oculus VR Rift SDK except in compliance with the License,
-which is provided at the time of installation or download, or which
-otherwise accompanies this software in either electronic or hard copy form.
-
-You may obtain a copy of the License at
-
-http://www.oculusvr.com/licenses/LICENSE-3.2
-
-Unless required by applicable law or agreed to in writing, the Oculus VR SDK
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-
+/********************************************************************************//**
+\file      OVR_CAPI.h
+\brief     Keys for CAPI calls
+\copyright Copyright 2014 Oculus VR, LLC All Rights reserved.
 ************************************************************************************/
 
 #ifndef OVR_CAPI_Keys_h
@@ -42,7 +22,11 @@ limitations under the License.
 #define OVR_KEY_MAX_EYE_TO_PLATE_DISTANCE   "MaxEyeToPlateDist"   // float[2] meters
 #define OVR_KEY_EYE_CUP                     "EyeCup"              // char[16] "A", "B", or "C"
 #define OVR_KEY_CUSTOM_EYE_RENDER           "CustomEyeRender"     // bool
-#define OVR_KEY_CAMERA_POSITION				"CenteredFromWorld"   // double[7] ovrPosef quat rotation x, y, z, w, translation x, y, z
+//Legacy profile value tied to the device and serial
+#define OVR_KEY_CAMERA_POSITION_1				"CenteredFromWorld"   // double[7] ovrPosef quat rotation x, y, z, w, translation x, y, z
+//New value that now only ties to the device so that swapping headsets retains the offset from the tracker
+#define OVR_KEY_CAMERA_POSITION_2			"CenteredFromWorld2"   // double[7] ovrPosef quat rotation x, y, z, w, translation x, y, z
+#define OVR_KEY_CAMERA_POSITION OVR_KEY_CAMERA_POSITION_2 
 
 
 // Default measurements empirically determined at Oculus to make us happy
