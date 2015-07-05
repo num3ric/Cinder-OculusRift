@@ -267,12 +267,10 @@ public:
 	//! Unbinds the framebuffer.
 	void	unbind() const;
 
-	//! Set the base viewpoint position and orientation through the host camera.
-	void	setHostCamera( const ci::CameraPersp& camera ) { mHostCamera = camera; }
-
 	//! Returns the convenience host camera (base viewpoint position and orientation).
-	ci::CameraPersp&		getHostCamera() { return mHostCamera; }
 	const ci::CameraPersp&	getHostCamera() const { return mHostCamera; }
+	//! Set the base viewpoint position and orientation through the host camera. (Affects the model matrix.)
+	void	setHostCamera( const ci::CameraPersp& camera ) { mModelMatrixCached = false; mHostCamera = camera; }
 
 	//! Enable the current rendered eye, applies the viewport and mvp matrices directly (optionally disabled). 
 	void	enableEye( int eyeIndex, bool applyMatrices = true );
@@ -280,7 +278,6 @@ public:
 	std::list<ovrEyeType>	getEyes() const;
 
 	//! Returns the active eye camera.
-	ci::CameraPersp&		getEyeCamera() { return mEyeCamera; }
 	const ci::CameraPersp&	getEyeCamera() const { return mEyeCamera; }
 
 	/*! Re-centers the sensor orientation.
@@ -332,10 +329,10 @@ public:
 	//! Returns the size of the render target fbo (used by both eyes).
 	glm::ivec2	getFboSize() const { return mRenderBuffer->getSize(); }
 
-	//! Returns the composed host and (active) eye view matrix.
+	//! Returns the host camera view matrix, which acts as the rift model matrix.
+	glm::mat4	getModelMatrix() const;
+	//! Returns the active eye's view matrix.
 	glm::mat4	getViewMatrix() const;
-	//! Returns the composed host and (active) eye inverse view matrix.
-	glm::mat4	getInverseViewMatrix() const;
 	//! Returns the composed host and (active) eye projection matrix.
 	glm::mat4	getProjectionMatrix() const;
 	//! Returns the active eye viewport.
@@ -368,7 +365,8 @@ private:
 	void	startDrawFn( ci::app::Renderer *renderer );
 	void	finishDrawFn( ci::app::Renderer *renderer );
 	
-
+	mutable glm::mat4	mModelMatrix;
+	mutable bool		mModelMatrixCached = false;
 	mutable glm::mat4	mProjectionMatrix;
 	mutable bool		mProjectionCached = false;
 	mutable glm::mat4	mViewMatrix, mInverseViewMatrix;

@@ -33,10 +33,7 @@ InstancedStereoApp::InstancedStereoApp()
 : mLightWorldPosition( vec4( 1, 1, 1, 1 ) )
 {
 	if( mRift.initialize( getWindow() ) ) {
-		if( mRift.isDesktopExtended() )
-			app::setFullScreen();
-		else
-			app::setWindowSize( mRift.getNativeWindowResolution() );
+
 		CameraPersp host;
 		host.setEyePoint( vec3( 0, 0, 1 ) );
 		host.lookAt( vec3( 0 ) );
@@ -82,7 +79,7 @@ void InstancedStereoApp::draw()
 		gl::ScopedMatrices push;
 		mRift.enableEye( eye );
 		auto idx = 3 * static_cast<size_t>( eye );
-		worldToEyeClipMatrices.at( idx ) = mRift.getViewMatrix();
+		worldToEyeClipMatrices.at( idx ) = mRift.getViewMatrix() * mRift.getModelMatrix();
 		worldToEyeClipMatrices.at( idx + 1 ) = mRift.getProjectionMatrix();
 		sceneDraw();
 	}
@@ -130,7 +127,7 @@ void prepareSettings( App::Settings *settings )
 
 	settings->disableFrameRate();
 	settings->setTitle( "Oculus Rift Sample" );
-	settings->setWindowSize( 1920, 1080 );
+	settings->setWindowSize( 1920/2, 1080/2 );
 }
 
 CINDER_APP( InstancedStereoApp, RendererGl( RendererGl::Options().msaa( 0 ) ), prepareSettings );

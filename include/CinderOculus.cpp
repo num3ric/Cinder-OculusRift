@@ -49,6 +49,9 @@ using namespace hmd;
 std::unique_ptr<RiftManager> RiftManager::mInstance = nullptr;
 std::once_flag RiftManager::mOnceFlag;
 
+const glm::vec4 OVR_UP{ 0, 1, 0, 0 };
+const glm::vec4 OVR_FORWARD{ 0, 0, -1, 0 };
+
 bool OVR_VERIFY( const ovrResult& result )
 {
 	if( OVR_SUCCESS( result ) ) {
@@ -115,7 +118,7 @@ OculusRift::OculusRift()
 , mIsRenderUpdating( true )
 {
 	mHostCamera.setEyePoint( vec3( 0 ) );
-	mHostCamera.setViewDirection( vec3( 0, 0, 1 ) );
+	mHostCamera.setViewDirection( vec3( 0, 0, -1 ) );
 	
 	if( OVR_SUCCESS( ovrHmd_Detect() ) ) {
 		OVR_VERIFY( ovrHmd_Create( 0, &mHmd ) );
@@ -261,8 +264,8 @@ void OculusRift::enableEye( int eyeIndex, bool applyMatrices )
 
 	if( applyMatrices ) {
 		gl::viewport( getEyeViewport() );
-		gl::setModelMatrix( mat4() );
-		gl::setViewMatrix( getViewMatrix() );
+		gl::setModelMatrix( mHostCamera.getViewMatrix() );
+		gl::setViewMatrix( mEyeCamera.getViewMatrix() );
 		gl::setProjectionMatrix( getProjectionMatrix() );
 	}
 }
@@ -311,27 +314,14 @@ std::list<ovrEyeType> OculusRift::getEyes() const
 	return {};
 }
 
-glm::mat4 OculusRift::getViewMatrix() const
+glm::mat4 OculusRift::getModelMatrix() const
 {
-	if( ! mViewMatrixCached ) {
-		mat4 hostOrientation = glm::toMat4( mHostCamera.getOrientation() );
-		mat4 orientation = hostOrientation * glm::toMat4( mEyeCamera.getOrientation() );
-		vec3 up = vec3( orientation * vec4( 0, 1, 0, 0 ) );
-		vec3 forward = vec3( orientation * vec4( 0, 0, -1, 0 ) );
-		vec3 eye = mHostCamera.getEyePoint() + vec3( hostOrientation * vec4( mEyeCamera.getEyePoint(), 1 ) );
-		mViewMatrix = mat4( glm::lookAt( eye, eye + forward, up ) ) * glm::scale( vec3( 1.0f / mHeadScale ) );
-		mViewMatrixCached = true;
-	}
-	return mViewMatrix;
+	return mHostCamera.getViewMatrix();
 }
 
-glm::mat4 OculusRift::getInverseViewMatrix() const
+glm::mat4 OculusRift::getViewMatrix() const
 {
-	if( ! mInverseViewMatrixCached ) {
-		mInverseViewMatrix = glm::inverse( getViewMatrix() );
-		mInverseViewMatrixCached = true;
-	}
-	return mInverseViewMatrix;
+	return mEyeCamera.getViewMatrix();
 }
 
 glm::mat4 OculusRift::getProjectionMatrix() const

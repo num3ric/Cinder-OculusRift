@@ -54,7 +54,7 @@ BasicSampleApp::BasicSampleApp()
 		host.setEyePoint( mViewerPosition );
 		host.lookAt( vec3( 0 ) );
 		mRift.setHostCamera( host );
-		mRift.setScreenPercentage( 1.25f );
+		mRift.setScreenPercentage( 1.3f );
 	}
 
 	// Setup camera for the debug (main) window.
@@ -73,9 +73,12 @@ void BasicSampleApp::update()
 	// Animate light position.
 	mTime = getElapsedSeconds();
 	float t = float( mTime ) * 0.4f;
-	mLightWorldPosition = vec4( 1.0f * math<float>::sin( t ), math<float>::sin( t * 4.0f ), 1.0f * math<float>::cos( t ), 1 );
+	mLightWorldPosition = vec4( math<float>::sin( t ), math<float>::sin( t * 4.0f ), math<float>::cos( t ), 1 );
 
-	mRift.setScreenPercentage( 0.5f * ( sin( app::getElapsedSeconds() ) + 1.0f ) + 0.5f );
+	auto host = mRift.getHostCamera();
+	host.setEyePoint( mViewerPosition + vec3( 0.5f * sin( app::getElapsedSeconds() ), 0, 0 ) );
+	host.lookAt( vec3( 0 ) );
+	mRift.setHostCamera( host );
 }
 
 void BasicSampleApp::draw()
@@ -125,8 +128,7 @@ void BasicSampleApp::draw()
 			// Draw positional tracking camera frustum
 			CameraPersp positional;
 			if( mRift.getPositionalTrackingCamera( &positional ) ) {
-				gl::ScopedModelMatrix push;
-				gl::setModelMatrix( mRift.getHostCamera().getInverseViewMatrix() );
+				gl::setModelMatrix( mat4() );
 				gl::lineWidth( 1.0f );
 				gl::drawFrustum( positional );
 			}
