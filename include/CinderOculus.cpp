@@ -38,7 +38,7 @@
 
 #include "CinderOculus.h"
 #include "cinder/Log.h"
-#include "cinder/gl/VboMesh.h"
+#include "cinder/app/App.h"
 #include "cinder/Utilities.h"
 #include "cinder/Breakpoint.h"
 
@@ -113,6 +113,16 @@ OculusRift::OculusRift()
 , mMirrorTexture( nullptr )
 , mIsRenderUpdating( true )
 {
+	if( app::App::get()->isFrameRateEnabled() ) {
+		CI_LOG_W( "CiOculus: Disabled framerate for better performance." );
+		app::App::get()->disableFrameRate();
+	}
+
+	if( gl::isVerticalSyncEnabled() ) {
+		CI_LOG_W( "CiOculus: Disabled vertical sync: handled by compositor service." );
+		gl::enableVerticalSync( false );
+	}
+
 	mHostCamera.setEyePoint( vec3( 0 ) );
 	mHostCamera.setViewDirection( vec3( 0, 0, -1 ) );
 	
