@@ -321,18 +321,15 @@ public:
 
 	bool	isRenderUpdating() const { return mIsRenderUpdating; }
 
-	//! Scale the head scale factor (based in meters)
-	void	setHeadScale( float scale );
-
 	//! Returns the native resolution of the HMD.
 	glm::ivec2	getNativeHmdResolution() const { return fromOvr( mHmd->Resolution ); }
 	//! Returns the size of the render target fbo (used by both eyes).
 	glm::ivec2	getFboSize() const { return mRenderBuffer->getSize(); }
 
 	//! Returns the host camera view matrix, which acts as the rift model matrix.
-	glm::mat4	getModelMatrix() const;
+	inline glm::mat4	getModelMatrix() const;
 	//! Returns the active eye's view matrix.
-	glm::mat4	getViewMatrix() const;
+	inline glm::mat4	getViewMatrix() const;
 	//! Returns the composed host and (active) eye projection matrix.
 	glm::mat4	getProjectionMatrix() const;
 	//! Returns the active eye viewport.

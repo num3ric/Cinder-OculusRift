@@ -49,9 +49,6 @@ using namespace hmd;
 std::unique_ptr<RiftManager> RiftManager::mInstance = nullptr;
 std::once_flag RiftManager::mOnceFlag;
 
-const glm::vec4 OVR_UP{ 0, 1, 0, 0 };
-const glm::vec4 OVR_FORWARD{ 0, 0, -1, 0 };
-
 bool OVR_VERIFY( const ovrResult& result )
 {
 	if( OVR_SUCCESS( result ) ) {
@@ -103,7 +100,6 @@ static const unsigned int kDefaulTrackingCaps =
 
 OculusRift::OculusRift()
 : mWindow( nullptr )
-, mHeadScale( 1.0f )
 , mScreenPercentage( 1.0f )
 , mHmdCaps( kDefaultHmdCaps )
 , mTrackingCaps( kDefaulTrackingCaps )
@@ -264,8 +260,8 @@ void OculusRift::enableEye( int eyeIndex, bool applyMatrices )
 
 	if( applyMatrices ) {
 		gl::viewport( getEyeViewport() );
-		gl::setModelMatrix( mHostCamera.getViewMatrix() );
-		gl::setViewMatrix( mEyeCamera.getViewMatrix() );
+		gl::setModelMatrix( getModelMatrix() );
+		gl::setViewMatrix( getViewMatrix() );
 		gl::setProjectionMatrix( getProjectionMatrix() );
 	}
 }
@@ -416,11 +412,6 @@ void OculusRift::enableMirrored( bool enabled )
 	if( mIsMirrrored != enabled ) {
 		mIsMirrrored = enabled;
 	}
-}
-
-void OculusRift::setHeadScale( float scale )
-{
-	mHeadScale = scale;
 }
 
 bool OculusRift::isValid( const WindowRef& window )
