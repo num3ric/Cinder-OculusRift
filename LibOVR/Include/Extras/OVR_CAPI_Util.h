@@ -90,10 +90,10 @@ OVR_PUBLIC_FUNCTION(ovrMatrix4f) ovrMatrix4f_OrthoSubProjection(ovrMatrix4f proj
 ///
 /// \param[in] headPose Indicates the HMD position and orientation to use for the calculation.
 /// \param[in] hmdToEyeViewOffset Can be ovrEyeRenderDesc.HmdToEyeViewOffset returned from 
-///            ovrHmd_GetRenderDesc. For monoscopic rendering, use a vector that is the average 
+///            ovr_GetRenderDesc. For monoscopic rendering, use a vector that is the average 
 ///            of the two vectors for both eyes.
 /// \param[out] outEyePoses If outEyePoses are used for rendering, they should be passed to 
-///             ovrHmd_SubmitFrame in ovrLayerEyeFov::RenderPose or ovrLayerEyeFovDepth::RenderPose.
+///             ovr_SubmitFrame in ovrLayerEyeFov::RenderPose or ovrLayerEyeFovDepth::RenderPose.
 ///
 OVR_PUBLIC_FUNCTION(void) ovr_CalcEyePoses(ovrPosef headPose,
                                            const ovrVector3f hmdToEyeViewOffset[2],
@@ -107,32 +107,21 @@ OVR_PUBLIC_FUNCTION(void) ovr_CalcEyePoses(ovrPosef headPose,
 /// Assuming outEyePoses are used for rendering, it should be passed as a part of ovrLayerEyeFov.
 /// The caller does not need to worry about applying HmdToEyeViewOffset to the returned outEyePoses variables.
 ///
-/// \param[in]  hmd Specifies an ovrHmd previously returned by ovrHmd_Create.
+/// \param[in]  hmd Specifies an ovrHmd previously returned by ovr_Create.
 /// \param[in]  frameIndex Specifies the targeted frame index, or 0 to refer to one frame after 
-///             the last time ovrHmd_SubmitFrame was called.
+///             the last time ovr_SubmitFrame was called.
 /// \param[in]  hmdToEyeViewOffset Can be ovrEyeRenderDesc.HmdToEyeViewOffset returned from 
-///             ovrHmd_GetRenderDesc. For monoscopic rendering, use a vector that is the average 
+///             ovr_GetRenderDesc. For monoscopic rendering, use a vector that is the average 
 ///             of the two vectors for both eyes.
 /// \param[out] outEyePoses The predicted eye poses.
 /// \param[out] outHmdTrackingState The predicted ovrTrackingState. May be NULL, in which case it is ignored.
 ///
-OVR_PUBLIC_FUNCTION(void) ovrHmd_GetEyePoses(ovrHmd hmd, unsigned int frameIndex,
+OVR_PUBLIC_FUNCTION(void) ovr_GetEyePoses(ovrHmd hmd, unsigned int frameIndex,
                                              const ovrVector3f hmdToEyeViewOffset[2],
                                              ovrPosef outEyePoses[2],
                                              ovrTrackingState* outHmdTrackingState);
 
 
-
-
-/// Waits until the specified absolute time.
-///
-/// \deprecated This function may be removed in a future version.
-///
-/// \param[in] absTime Specifies the absolute future time to wait until.
-///
-/// \see ovr_GetTimeInSeconds
-/// 
-OVR_PUBLIC_FUNCTION(double) ovr_WaitTillTime(double absTime);
 
 
 #ifdef __cplusplus

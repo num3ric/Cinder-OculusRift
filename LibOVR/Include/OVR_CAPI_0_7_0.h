@@ -1,5 +1,5 @@
 /********************************************************************************//**
-\file      OVR_CAPI_0_6_0.h
+\file      OVR_CAPI_0_7_0.h
 \brief     C Interface to the Oculus PC SDK tracking and rendering library.
 \copyright Copyright 2014 Oculus VR, LLC All Rights reserved.
 ************************************************************************************/
@@ -25,7 +25,7 @@
 //-----------------------------------------------------------------------------------
 // ***** OVR_OS
 //
-#if !defined(OVR_OS_WIN32) && defined(_WIN32) 
+#if !defined(OVR_OS_WIN32) && defined(_WIN32)
     #define OVR_OS_WIN32
 #endif
 
@@ -73,7 +73,7 @@
 /// Defined as extern "C" when built from C++ code.
 //
 #if !defined(OVR_EXTERN_C)
-    #ifdef __cplusplus 
+    #ifdef __cplusplus
         #define OVR_EXTERN_C extern "C"
     #else
         #define OVR_EXTERN_C
@@ -99,30 +99,28 @@
         #if defined(_WIN32)
             #define OVR_PUBLIC_FUNCTION(rval) OVR_EXTERN_C __declspec(dllexport) rval OVR_CDECL
             #define OVR_PUBLIC_CLASS          __declspec(dllexport)
-            #define OVR_PRIVATE_FUNCTION
+            #define OVR_PRIVATE_FUNCTION(rval) rval OVR_CDECL
             #define OVR_PRIVATE_CLASS
         #else
             #define OVR_PUBLIC_FUNCTION(rval) OVR_EXTERN_C __attribute__((visibility("default"))) rval OVR_CDECL /* Requires GCC 4.0+ */
             #define OVR_PUBLIC_CLASS          __attribute__((visibility("default"))) /* Requires GCC 4.0+ */
-            #define OVR_PRIVATE_FUNCTION      __attribute__((visibility("hidden")))
+            #define OVR_PRIVATE_FUNCTION(rval) __attribute__((visibility("hidden"))) rval OVR_CDECL
             #define OVR_PRIVATE_CLASS         __attribute__((visibility("hidden")))
         #endif
     #elif defined(OVR_DLL_IMPORT)
         #if defined(_WIN32)
             #define OVR_PUBLIC_FUNCTION(rval) OVR_EXTERN_C __declspec(dllimport) rval OVR_CDECL
             #define OVR_PUBLIC_CLASS          __declspec(dllimport)
-            #define OVR_PRIVATE_FUNCTION
-            #define OVR_PRIVATE_CLASS
         #else
             #define OVR_PUBLIC_FUNCTION(rval) OVR_EXTERN_C rval OVR_CDECL
             #define OVR_PUBLIC_CLASS
-            #define OVR_PRIVATE_FUNCTION
-            #define OVR_PRIVATE_CLASS
         #endif
+        #define OVR_PRIVATE_FUNCTION(rval) rval OVR_CDECL
+        #define OVR_PRIVATE_CLASS
     #else // OVR_STATIC_BUILD
         #define OVR_PUBLIC_FUNCTION(rval)     OVR_EXTERN_C rval OVR_CDECL
         #define OVR_PUBLIC_CLASS
-        #define OVR_PRIVATE_FUNCTION
+        #define OVR_PRIVATE_FUNCTION(rval) rval OVR_CDECL
         #define OVR_PRIVATE_CLASS
     #endif
 #endif
@@ -175,7 +173,7 @@
 //-----------------------------------------------------------------------------------
 // ***** OVR_CC_HAS_FEATURE
 //
-// This is a portable way to use compile-time feature identification available 
+// This is a portable way to use compile-time feature identification available
 // with some compilers in a clean way. Direct usage of __has_feature in preprocessing
 // statements of non-supporting compilers results in a preprocessing error.
 //
@@ -380,39 +378,32 @@ typedef enum ovrHmdType_
     ovrHmd_DK2       = 6,
     ovrHmd_CB        = 8,
     ovrHmd_Other     = 9,
-    ovrHmd_EnumSize  = 0x7fffffff ///< \internal Force type int32_t.
+    ovrHmd_E3_2015   = 10,
+    ovrHmd_ES06      = 11,
+    ovrHmd_EnumSize = 0x7fffffff ///< \internal Force type int32_t.
 } ovrHmdType;
 
 
 /// HMD capability bits reported by device.
 ///
-/// Set <B>(read/write)</B> flags through ovrHmd_SetEnabledCaps()
+/// Set <B>(read/write)</B> flags through ovr_SetEnabledCaps()
 typedef enum ovrHmdCaps_
 {
     // Read-only flags.
-    ovrHmdCap_DebugDevice       = 0x0010,   ///< <B>(read only)</B> Specifies that the HMD is a virtual debug device.
+    ovrHmdCap_DebugDevice             = 0x0010,   ///< <B>(read only)</B> Specifies that the HMD is a virtual debug device.
 
-    /// \brief <B>(read/write)</B> Toggles low persistence mode on or off.
-    /// \details This setting reduces eye-tracking based motion blur. Eye-tracking based motion blur is caused by the viewer's focal point
-    /// moving more pixels than have refreshed in the same period of time.\n
-    /// The disadvantage of this setting is that this reduces the average brightness of the display and causes some users to perceive flicker.\n
-    /// <I>There is no performance cost for this option. Oculus recommends exposing it to the user as an optional setting.</I>
-    ovrHmdCap_LowPersistence    = 0x0080,
-    ovrHmdCap_DynamicPrediction = 0x0200,   ///< <B>(read/write)</B> Adjusts prediction dynamically based on internally measured latency.
-
+    
     /// Indicates to the developer what caps they can and cannot modify. These are processed by the client.
-    ovrHmdCap_Writable_Mask     = ovrHmdCap_LowPersistence |
-                                  ovrHmdCap_DynamicPrediction,
+    ovrHmdCap_Writable_Mask       = 0x0000,
 
-    /// \internal Indicates to the developer what caps they can and cannot modify. These are processed by the service.
-    ovrHmdCap_Service_Mask      = ovrHmdCap_LowPersistence |
-                                  ovrHmdCap_DynamicPrediction
-  , ovrHmdCap_EnumSize          = 0x7fffffff ///< \internal Force type int32_t.
+    ovrHmdCap_Service_Mask        = 0x0000,
+
+    ovrHmdCap_EnumSize            = 0x7fffffff ///< \internal Force type int32_t.
 } ovrHmdCaps;
 
 
 /// Tracking capability bits reported by the device.
-/// Used with ovrHmd_ConfigureTracking.
+/// Used with ovr_ConfigureTracking.
 typedef enum ovrTrackingCaps_
 {
     ovrTrackingCap_Orientation      = 0x0010,   ///< Supports orientation tracking (IMU).
@@ -420,7 +411,7 @@ typedef enum ovrTrackingCaps_
     ovrTrackingCap_Position         = 0x0040,   ///< Supports positional tracking.
     /// Overriding the other flags, this causes the application
     /// to ignore tracking settings. This is the internal
-    /// default before ovrHmd_ConfigureTracking is called.
+    /// default before ovr_ConfigureTracking is called.
     ovrTrackingCap_Idle             = 0x0100,
     ovrTrackingCap_EnumSize         = 0x7fffffff ///< \internal Force type int32_t.
 } ovrTrackingCaps;
@@ -438,14 +429,20 @@ typedef enum ovrEyeType_
 } ovrEyeType;
 
 
+typedef struct OVR_ALIGNAS(OVR_PTR_SIZE) ovrGraphicsLuid_
+{
+    // Public definition reserves space for graphics API-specific implementation
+    char        Reserved[8];
+} ovrGraphicsLuid;
+
+
 /// This is a complete descriptor of the HMD.
 typedef struct OVR_ALIGNAS(OVR_PTR_SIZE) ovrHmdDesc_
 {
-    struct ovrHmdStruct* Handle;               ///< Internal handle of this HMD.
     ovrHmdType   Type;                         ///< The type of HMD.
     OVR_ON64(OVR_UNUSED_STRUCT_PAD(pad0, 4))   ///< \internal struct paddding.
-    const char*  ProductName;                  ///< UTF8-encoded product identification string (e.g. "Oculus Rift DK1").
-    const char*  Manufacturer;                 ///< UTF8-encoded HMD manufacturer identification string.
+    char         ProductName[64];              ///< UTF8-encoded product identification string (e.g. "Oculus Rift DK1").
+    char         Manufacturer[64];             ///< UTF8-encoded HMD manufacturer identification string.
     short        VendorId;                     ///< HID (USB) vendor identifier of the device.
     short        ProductId;                    ///< HID (USB) product identifier of the device.
     char         SerialNumber[24];             ///< Sensor (and display) serial number.
@@ -454,22 +451,25 @@ typedef struct OVR_ALIGNAS(OVR_PTR_SIZE) ovrHmdDesc_
     float        CameraFrustumHFovInRadians;   ///< External tracking camera frustum horizontal field-of-view (if present).
     float        CameraFrustumVFovInRadians;   ///< External tracking camera frustum vertical field-of-view (if present).
     float        CameraFrustumNearZInMeters;   ///< External tracking camera frustum near Z (if present).
-    float        CameraFrustumFarZInMeters;    ///< External tracking camera frustum near Z (if present).
-    unsigned int HmdCaps;                      ///< Capability bits described by ovrHmdCaps.
-    unsigned int TrackingCaps;                 ///< Capability bits described by ovrTrackingCaps.
+    float        CameraFrustumFarZInMeters;    ///< External tracking camera frustum far Z (if present).
+    unsigned int AvailableHmdCaps;             ///< Capability bits described by ovrHmdCaps which the HMD currently supports.
+    unsigned int DefaultHmdCaps;               ///< Capability bits described by ovrHmdCaps which are default for the current Hmd.
+    unsigned int AvailableTrackingCaps;        ///< Capability bits described by ovrTrackingCaps which the system currently supports.
+    unsigned int DefaultTrackingCaps;          ///< Capability bits described by ovrTrackingCaps which are default for the current system.
     ovrFovPort   DefaultEyeFov[ovrEye_Count];  ///< Defines the recommended FOVs for the HMD.
     ovrFovPort   MaxEyeFov[ovrEye_Count];      ///< Defines the maximum FOVs for the HMD.
-    ovrEyeType   EyeRenderOrder[ovrEye_Count]; ///< Preferred eye rendering order for best performance. Can help reduce latency on sideways-scanned screens.
     ovrSizei     Resolution;                   ///< Resolution of the full HMD screen (both eyes) in pixels.
-
+    float        DisplayRefreshRate;           ///< Nominal refresh rate of the display in cycles per second at the time of HMD creation.
+    OVR_ON64(OVR_UNUSED_STRUCT_PAD(pad1, 4))   ///< \internal struct paddding.
 } ovrHmdDesc;
 
-/// Type used by ovrHmd_* functions.
-typedef const ovrHmdDesc* ovrHmd;
+
+/// Used as an opaque pointer to an OVR session.
+typedef struct ovrHmdStruct* ovrHmd;
 
 
 /// Bit flags describing the current status of sensor tracking.
-//  The values must be the same as in enum StatusBits
+///  The values must be the same as in enum StatusBits
 ///
 /// \see ovrTrackingState
 ///
@@ -498,16 +498,10 @@ typedef struct OVR_ALIGNAS(4) ovrSensorData_
 } ovrSensorData;
 
 
-
-/// @cond DoxygenIgnore
-/// @endcond
-
-
-
 /// Tracking state at a given absolute time (describes predicted HMD pose, etc.).
-/// Returned by ovrHmd_GetTrackingState.
+/// Returned by ovr_GetTrackingState.
 ///
-/// \see ovrHmd_GetTrackingState
+/// \see ovr_GetTrackingState
 ///
 typedef struct OVR_ALIGNAS(8) ovrTrackingState_
 {
@@ -525,6 +519,11 @@ typedef struct OVR_ALIGNAS(8) ovrTrackingState_
     /// It can be used as a reference point to render real-world objects in the correct location.
     ovrPosef       LeveledCameraPose;
 
+    /// The most recent calculated pose for each hand when hand controller tracking is present.
+    /// HandPoses[ovrHand_Left] refers to the left hand and HandPoses[ovrHand_Right] to the right hand.
+    /// These values can be combined with ovrInputState for complete hand controller information.
+    ovrPoseStatef  HandPoses[2];
+
     /// The most recent sensor data received from the HMD.
     ovrSensorData  RawSensorData;
 
@@ -532,21 +531,22 @@ typedef struct OVR_ALIGNAS(8) ovrTrackingState_
     unsigned int   StatusFlags;
 
     /// Tags the vision processing results to a certain frame counter number.
-    uint32_t LastCameraFrameCounter;
+    uint32_t       LastCameraFrameCounter;
 
     OVR_UNUSED_STRUCT_PAD(pad0, 4) ///< \internal struct padding
+
 } ovrTrackingState;
 
 
-/// Frame timing data reported by ovrHmd_GetFrameTiming.
+/// Frame timing data reported by ovr_GetFrameTiming.
 ///
-/// \see ovrHmd_GetFrameTiming
+/// \see ovr_GetFrameTiming
 ///
 typedef struct OVR_ALIGNAS(8) ovrFrameTiming_
 {
     /// A point in time when the middle of the screen will be displayed. For global shutter,
     /// this will be the display time. For rolling shutter this is a point at which half the image has
-    /// been displayed. This value can be passed as an absolute time to ovrHmd_GetTrackingState
+    /// been displayed. This value can be passed as an absolute time to ovr_GetTrackingState
     /// to get the best predicted pose for rendering the scene.
     double      DisplayMidpointSeconds;
 
@@ -563,12 +563,12 @@ typedef struct OVR_ALIGNAS(8) ovrFrameTiming_
 } ovrFrameTiming;
 
 
-/// Rendering information for each eye. Computed by ovrHmd_GetRenderDesc() based on the
+/// Rendering information for each eye. Computed by ovr_GetRenderDesc() based on the
 /// specified FOV. Note that the rendering viewport is not included
 /// here as it can be specified separately and modified per frame by
 /// passing different Viewport values in the layer structure.
 ///
-/// \see ovrHmd_GetRenderDesc
+/// \see ovr_GetRenderDesc
 ///
 typedef struct OVR_ALIGNAS(4) ovrEyeRenderDesc_
 {
@@ -604,7 +604,7 @@ typedef struct OVR_ALIGNAS(4) ovrTimewarpProjectionDesc_
 ///   units are inches, but you're shrinking the player to half their normal size, then
 ///   HmdSpaceToWorldScaleInMeters would be 0.0254*2.0.
 ///
-/// \see ovrEyeRenderDesc, ovrHmd_SubmitFrame
+/// \see ovrEyeRenderDesc, ovr_SubmitFrame
 ///
 typedef struct OVR_ALIGNAS(4) ovrViewScaleDesc_
 {
@@ -626,14 +626,12 @@ typedef struct OVR_ALIGNAS(4) ovrViewScaleDesc_
 /// to return portable types such as ovrTexture and ovrRenderAPIConfig.
 typedef enum ovrRenderAPIType_
 {
-    ovrRenderAPI_None,                  ///< No API
-    ovrRenderAPI_OpenGL,                ///< OpenGL
-    ovrRenderAPI_Android_GLES,          ///< OpenGL ES
-    ovrRenderAPI_D3D9_Obsolete,         ///< DirectX 9. Obsolete
-    ovrRenderAPI_D3D10_Obsolete,        ///< DirectX 10. Obsolete
-    ovrRenderAPI_D3D11,                 ///< DirectX 11.
-    ovrRenderAPI_Count,                 ///< \internal Count of enumerated elements.
-    ovrRenderAPI_EnumSize = 0x7fffffff  ///< \internal Force type int32_t.
+    ovrRenderAPI_None         = 0,          ///< No API
+    ovrRenderAPI_OpenGL       = 1,          ///< OpenGL
+    ovrRenderAPI_Android_GLES = 2,          ///< OpenGL ES
+    ovrRenderAPI_D3D11        = 5,          ///< DirectX 11.
+    ovrRenderAPI_Count        = 4,          ///< \internal Count of enumerated elements.
+    ovrRenderAPI_EnumSize     = 0x7fffffff  ///< \internal Force type int32_t.
 } ovrRenderAPIType;
 
 
@@ -663,45 +661,154 @@ typedef struct OVR_ALIGNAS(OVR_PTR_SIZE) ovrTexture_
 
 /// Describes a set of textures that act as a rendered flip chain.
 ///
-/// An ovrSwapTextureSet per layer is passed to ovrHmd_SubmitFrame via one of the ovrLayer types.
-/// The TextureCount refers to the flip chain count and not an eye count. 
+/// An ovrSwapTextureSet per layer is passed to ovr_SubmitFrame via one of the ovrLayer types.
+/// The TextureCount refers to the flip chain count and not an eye count.
 /// See the layer structs and functions for information about how to use ovrSwapTextureSet.
-/// 
-/// ovrSwapTextureSets must be created by either the ovrHmd_CreateSwapTextureSetD3D11 or 
-/// ovrHmd_CreateSwapTextureSetGL factory function, and must be destroyed by ovrHmd_DestroySwapTextureSet.
 ///
-/// \see ovrHmd_CreateSwapTextureSetD3D11, ovrHmd_CreateSwapTextureSetGL, ovrHmd_DestroySwapTextureSet.
+/// ovrSwapTextureSets must be created by either the ovr_CreateSwapTextureSetD3D11 or
+/// ovr_CreateSwapTextureSetGL factory function, and must be destroyed by ovr_DestroySwapTextureSet.
+///
+/// \see ovr_CreateSwapTextureSetD3D11, ovr_CreateSwapTextureSetGL, ovr_DestroySwapTextureSet.
 ///
 typedef struct OVR_ALIGNAS(OVR_PTR_SIZE) ovrSwapTextureSet_
 {
     ovrTexture* Textures;       ///< Points to an array of ovrTextures.
-    int         TextureCount;   ///< The number of textures referenced by the Textures array. 
+    int         TextureCount;   ///< The number of textures referenced by the Textures array.
 
-    /// CurrentIndex specifies which of the Textures will be used by the ovrHmd_SubmitFrame call.
+    /// CurrentIndex specifies which of the Textures will be used by the ovr_SubmitFrame call.
     /// This is manually incremented by the application, typically in a round-robin manner.
     ///
     /// Before selecting a Texture as a rendertarget, the application should increment CurrentIndex by
     /// 1 and wrap it back to 0 if CurrentIndex == TextureCount, so that it gets a fresh rendertarget,
     /// one that is not currently being used for display. It can then render to Textures[CurrentIndex].
     ///
-    /// After rendering, the application calls ovrHmd_SubmitFrame using that same CurrentIndex value
+    /// After rendering, the application calls ovr_SubmitFrame using that same CurrentIndex value
     /// to display the new rendertarget.
     ///
-    /// The application can submit multiple frames with the same ovrSwapTextureSet and CurrentIndex 
+    /// The application can submit multiple frames with the same ovrSwapTextureSet and CurrentIndex
     /// value if the rendertarget does not need to be updated, for example when displaying an
     /// information display whose text has not changed since the previous frame.
     ///
-    /// Multiple layers can use the same ovrSwapTextureSet at the same time - there is no need to 
+    /// Multiple layers can use the same ovrSwapTextureSet at the same time - there is no need to
     /// create a unique ovrSwapTextureSet for each layer. However, all the layers using a particular
     /// ovrSwapTextureSet will share the same value of CurrentIndex, so they cannot use different
     /// textures within the ovrSwapTextureSet.
     ///
-    /// Once a particular Textures[CurrentIndex] has been sent to ovrHmd_SubmitFrame, that texture
-    /// should not be rendered to until a subsequent ovrHmd_SubmitFrame is made (either with a
+    /// Once a particular Textures[CurrentIndex] has been sent to ovr_SubmitFrame, that texture
+    /// should not be rendered to until a subsequent ovr_SubmitFrame is made (either with a
     /// different CurrentIndex value, or with a different ovrSwapTextureSet, or disabling the layer).
     int         CurrentIndex;
 } ovrSwapTextureSet;
 
+
+
+//-----------------------------------------------------------------------------------
+
+/// Describes button input types.
+/// Button inputs are combined; that is they will be reported as pressed if they are 
+/// pressed on either one of the two devices.
+/// The ovrButton_Up/Down/Left/Right map to both XBox D-Pad and directional buttons.
+/// The ovrButton_Enter and ovrButton_Return map to Start and Back controller buttons, respectively.
+typedef enum ovrButton_
+{    
+    ovrButton_A         = 0x00000001,
+    ovrButton_B         = 0x00000002,
+    ovrButton_RThumb    = 0x00000004,
+    ovrButton_RShoulder = 0x00000008,
+    ovrButton_X         = 0x00000100,
+    ovrButton_Y         = 0x00000200,
+    ovrButton_LThumb    = 0x00000400,  
+    ovrButton_LShoulder = 0x00000800,
+
+    // Navigation through DPad.
+    ovrButton_Up        = 0x00010000,
+    ovrButton_Down      = 0x00020000,
+    ovrButton_Left      = 0x00040000,
+    ovrButton_Right     = 0x00080000,
+    ovrButton_Enter     = 0x00100000, // Start on XBox controller.
+    ovrButton_Back      = 0x00200000, // Back on Xbox controller.     
+
+
+    ovrButton_EnumSize  = 0x7fffffff ///< \internal Force type int32_t.
+} ovrButton;
+
+/// Describes touch input types.
+/// These values map to capacitive touch values reported ovrInputState::Touch.
+/// Some of these values are mapped to button bits for consistency.
+typedef enum ovrTouch_
+{
+    ovrTouch_A              = ovrButton_A,
+    ovrTouch_B              = ovrButton_B,
+    ovrTouch_RThumb         = ovrButton_RThumb,
+    ovrTouch_RIndexTrigger  = 0x00000010,
+    ovrTouch_X              = ovrButton_X,
+    ovrTouch_Y              = ovrButton_Y,
+    ovrTouch_LThumb         = ovrButton_LThumb,
+    ovrTouch_LIndexTrigger  = 0x00001000,
+
+    // Finger pose state 
+    // Derived internally based on distance, proximity to sensors and filtering.
+    ovrTouch_RIndexPointing = 0x00000020,
+    ovrTouch_RThumbUp       = 0x00000040,    
+    ovrTouch_LIndexPointing = 0x00002000,
+    ovrTouch_LThumbUp       = 0x00004000,
+
+    ovrTouch_EnumSize       = 0x7fffffff ///< \internal Force type int32_t.
+} ovrTouch;
+
+/// Specifies which controller is connected; multiple can be connected at once.
+typedef enum ovrControllerType_
+{
+    ovrControllerType_LTouch    = 0x01,
+    ovrControllerType_RTouch    = 0x02,
+    ovrControllerType_Touch     = 0x03,
+    ovrControllerType_All       = 0xff,
+
+    ovrControllerType_EnumSize  = 0x7fffffff ///< \internal Force type int32_t.
+} ovrControllerType;
+
+
+/// Provides names for the left and right hand array indexes.
+///
+/// \see ovrInputState, ovrTrackingState
+/// 
+typedef enum ovrHandType_
+{
+    ovrHand_Left  = 0,
+    ovrHand_Right = 1,
+
+    ovrHand_EnumSize = 0x7fffffff ///< \internal Force type int32_t.
+} ovrHandType;
+
+
+
+/// ovrInputState describes the complete controller input state, including Oculus Touch,
+/// and XBox gamepad. If multiple inputs are connected and used at the same time,
+/// their inputs are combined.
+typedef struct ovrInputState_
+{
+    // System type when the controller state was last updated.
+    double              TimeInSeconds;
+
+    // Described by ovrControllerType. Indicates which ControllerTypes are present.
+    unsigned int        ConnectedControllerTypes;
+
+    // Values for buttons described by ovrButton.
+    unsigned int        Buttons;
+
+    // Touch values for buttons and sensors as described by ovrTouch.
+    unsigned int        Touches;
+    
+    // Left and right finger trigger values (ovrHand_Left and ovrHand_Right), in the range 0.0 to 1.0f.
+    float               IndexTrigger[2]; 
+    
+    // Left and right hand trigger values (ovrHand_Left and ovrHand_Right), in the range 0.0 to 1.0f.
+    float               HandTrigger[2];
+
+    // Horizontal and vertical thumbstick axis values (ovrHand_Left and ovrHand_Right), in the range -1.0f to 1.0f.
+    ovrVector2f         Thumbstick[2];
+    
+} ovrInputState;
 
 
 //-----------------------------------------------------------------------------------
@@ -725,9 +832,10 @@ typedef enum ovrInitFlags_
     /// field and verifies that the RequestedMinorVersion is supported.
     ovrInit_RequestVersion = 0x00000004,
 
-    /// Forces debug features of LibOVR off explicitly, even if it is built in debug mode.
-    ovrInit_ForceNoDebug   = 0x00000008,
 
+
+    // These bits are writable by user code.
+    ovrinit_WritableBits   = 0x00ffffff,
 
     ovrInit_EnumSize       = 0x7fffffff ///< \internal Force type int32_t.
 } ovrInitFlags;
@@ -749,11 +857,12 @@ typedef enum ovrLogLevel_
 
 /// Signature of the logging callback function pointer type.
 ///
+/// \param[in] userData is an arbitrary value specified by the user of ovrInitParams.
 /// \param[in] level is one of the ovrLogLevel constants.
 /// \param[in] message is a UTF8-encoded null-terminated string.
 /// \see ovrInitParams, ovrLogLevel, ovr_Initialize
 ///
-typedef void (OVR_CDECL* ovrLogCallback)(int level, const char* message);
+typedef void (OVR_CDECL* ovrLogCallback)(uintptr_t userData, int level, const char* message);
 
 
 /// Parameters for ovr_Initialize.
@@ -776,7 +885,12 @@ typedef struct OVR_ALIGNAS(8) ovrInitParams_
     /// Use NULL to specify no log callback.
     ovrLogCallback LogCallback;
 
-    /// Relative number of milliseconds to wait for a connection to the server 
+    /// User-supplied data which is passed as-is to LogCallback. Typically this 
+    /// is used to store an application-specific pointer which is read in the 
+    /// callback function.
+    uintptr_t      UserData;
+
+    /// Relative number of milliseconds to wait for a connection to the server
     /// before failing. Use 0 for the default timeout.
     uint32_t       ConnectionTimeoutMS;
 
@@ -797,36 +911,36 @@ extern "C" {
 //
 // Setup:
 //  - ovr_Initialize().
-//  - ovrHmd_Create(0, &hmd).
-//  - Call ovrHmd_ConfigureTracking() to configure and initialize tracking.
-//  - Use hmd members and ovrHmd_GetFovTextureSize() to determine graphics configuration
-//    and ovrHmd_GetRenderDesc() to get per-eye rendering parameters.
-//  - Allocate render target texture sets with ovrHmd_CreateSwapTextureSetD3D11() or
-//    ovrHmd_CreateSwapTextureSetGL().
+//  - ovr_Create(&hmd, &graphicsId).
+//  - Call ovr_ConfigureTracking() to configure and initialize tracking.
+//  - Use hmd members and ovr_GetFovTextureSize() to determine graphics configuration
+//    and ovr_GetRenderDesc() to get per-eye rendering parameters.
+//  - Allocate render target texture sets with ovr_CreateSwapTextureSetD3D11() or
+//    ovr_CreateSwapTextureSetGL().
 //
 // Application Loop:
-//  - Call ovrHmd_GetFrameTiming() to get the current frame timing information.
-//  - Call ovrHmd_GetTrackingState() and ovr_CalcEyePoses() to obtain the predicted
+//  - Call ovr_GetFrameTiming() to get the current frame timing information.
+//  - Call ovr_GetTrackingState() and ovr_CalcEyePoses() to obtain the predicted
 //    rendering pose for each eye based on timing.
 //  - Render the scene content into CurrentIndex of ovrTextureSet for each eye and layer
 //    you plan to update this frame. Increment texture set CurrentIndex.
-//  - Call ovrHmd_SubmitFrame() to render the distorted layers to the back buffer
-//    and present them on the HMD. If ovrHmd_SubmitFrame returns ovrSuccess_NotVisible,
-//    there is no need to render the scene for the next loop iteration. Instead, 
-//    just call ovrHmd_SubmitFrame again until it returns ovrSuccess.
+//  - Call ovr_SubmitFrame() to render the distorted layers to the back buffer
+//    and present them on the HMD. If ovr_SubmitFrame returns ovrSuccess_NotVisible,
+//    there is no need to render the scene for the next loop iteration. Instead,
+//    just call ovr_SubmitFrame again until it returns ovrSuccess.
 //
 // Shutdown:
-//  - ovrHmd_Destroy().
+//  - ovr_Destroy().
 //  - ovr_Shutdown().
 
 
 /// Initializes LibOVR
 ///
-/// Initialize LibOVR for application usage. This includes finding and loading the LibOVRRT  
+/// Initialize LibOVR for application usage. This includes finding and loading the LibOVRRT
 /// shared library. No LibOVR API functions, other than ovr_GetLastErrorInfo, can be called
 /// unless ovr_Initialize succeeds. A successful call to ovr_Initialize must be eventually
-/// followed by a call to ovr_Shutdown. ovr_Initialize calls are idempotent. 
-/// Calling ovr_Initialize twice does not require two matching calls to ovr_Shutdown. 
+/// followed by a call to ovr_Shutdown. ovr_Initialize calls are idempotent.
+/// Calling ovr_Initialize twice does not require two matching calls to ovr_Shutdown.
 /// If already initialized, the return value is ovr_Success.
 /// 
 /// LibOVRRT shared library search order:
@@ -839,7 +953,7 @@ extern "C" {
 ///      -# Standard OS shared library search location(s) (OS-specific).
 ///
 /// \param params Specifies custom initialization options. May be NULL to indicate default options.
-/// \return Returns an ovrResult indicating success or failure. In the case of failure, use 
+/// \return Returns an ovrResult indicating success or failure. In the case of failure, use
 ///         ovr_GetLastErrorInfo to get more information. Example failed results include:
 ///     - ovrError_Initialize: Generic initialization error.
 ///     - ovrError_LibLoad: Couldn't load LibOVRRT.
@@ -860,9 +974,9 @@ OVR_PUBLIC_FUNCTION(ovrResult) ovr_Initialize(const ovrInitParams* params);
 ///
 /// A successful call to ovr_Initialize must be eventually matched by a call to ovr_Shutdown.
 /// After calling ovr_Shutdown, no LibOVR functions can be called except ovr_GetLastErrorInfo
-/// or another ovr_Initialize. ovr_Shutdown invalidates all pointers, references, and created objects 
-/// previously returned by LibOVR functions. The LibOVRRT shared library can be unloaded by 
-/// ovr_Shutdown. 
+/// or another ovr_Initialize. ovr_Shutdown invalidates all pointers, references, and created objects
+/// previously returned by LibOVR functions. The LibOVRRT shared library can be unloaded by
+/// ovr_Shutdown.
 ///
 /// \see ovr_Initialize
 ///
@@ -883,7 +997,7 @@ typedef struct ovrErrorInfo_
 ///
 /// This function itself can never generate an error.
 /// The last error is never cleared by LibOVR, but will be overwritten by new errors.
-/// Do not use this call to determine if there was an error in the last API 
+/// Do not use this call to determine if there was an error in the last API
 /// call as successful API calls don't clear the last ovrErrorInfo.
 /// To avoid any inconsistency, ovr_GetLastErrorInfo should be called immediately
 /// after an API function that returned a failed ovrResult, with no other API
@@ -914,7 +1028,7 @@ OVR_PUBLIC_FUNCTION(const char*) ovr_GetVersionString();
 
 /// Writes a message string to the LibOVR tracing mechanism (if enabled).
 ///
-/// This message will be passed back to the application via the ovrLogCallback if 
+/// This message will be passed back to the application via the ovrLogCallback if
 /// it was registered.
 ///
 /// \param[in] level One of the ovrLogLevel constants.
@@ -932,82 +1046,76 @@ OVR_PUBLIC_FUNCTION(int) ovr_TraceMessage(int level, const char* message);
 /// Handles the enumeration, creation, destruction, and properties of an HMD (head-mounted display).
 ///@{
 
-/// Detects or re-detects HMDs and reports the total number detected.
-///
-/// This function is useful to determine if an HMD can be created without committing to 
-/// creating it. For example, an application can use this information to present an HMD selection GUI.
-///
-/// If one or more HMDs are present, an integer value is returned which indicates
-/// the number present. The number present indicates the range of valid indexes that 
-/// can be passed to ovrHmd_Create. If no HMDs are present, the return 
-/// value is zero. If there is an error, a negative error ovrResult value is
-/// returned.
-///
-/// ovrHmd_Detect can be called at any time between ovrInitiallize and ovrShutdown and 
-/// can be called multiple times or from multiple threads.
-///
-/// \return Returns an integer that specifies the number of HMDs currently present. Upon failure, OVR_SUCCESS(result) is false.
-///
-/// \see ovrHmd_Create
-///
-OVR_PUBLIC_FUNCTION(ovrResult) ovrHmd_Detect();
 
-/// Creates a handle to an HMD which doubles as a description structure.
+/// Returns information about the given HMD.
 ///
-/// Upon success the returned ovrHmd* must be freed with ovrHmd_Destroy.
-/// A second call to ovrHmd_Create or ovrHmd_CreateDebug with the same index as 
-/// a previously successful call will result in an error return value if the  
-/// previous Hmd has not been destroyed.
+/// ovr_Initialize must have first been called in order for this to succeed, otherwise ovrHmdDesc::Type
+/// will be reported as ovrHmd_None.
+/// 
+/// \param[in] hmd Specifies an ovrHmd previously returned by ovr_Create, else NULL in which
+///                case this function detects whether an HMD is present and returns its info if so.
 ///
-/// \param[in] index A value in the range of [0 .. ovrHmd_Detect()-1].
-/// \param[out] pHmd Provides a pointer to an ovrHmd which will be written to upon success.
-/// \return Returns an ovrResult indicating success or failure.
+/// \return Returns an ovrHmdDesc. If the hmd is NULL and ovrHmdDesc::Type is ovrHmd_None then 
+///         no HMD is present.
 ///
-/// \see ovrHmd_Destroy
-///
-OVR_PUBLIC_FUNCTION(ovrResult) ovrHmd_Create(int index, ovrHmd* pHmd);
+OVR_PUBLIC_FUNCTION(ovrHmdDesc) ovr_GetHmdDesc(ovrHmd hmd);
 
-/// Creates a fake HMD used for debugging only.
+
+/// Creates a handle to an HMD.
 ///
-/// Upon success the returned ovrHmd* must be freed with ovrHmd_Destroy.
-/// A second call to ovrHmd_Create or ovrHmd_CreateDebug with the same index as 
-/// a previously successful call will result in an error return value if the  
-/// previous Hmd has not been destroyed.
+/// Upon success the returned ovrHmd must be eventually freed with ovr_Destroy when it is no longer needed.
+/// A second call to ovr_Create will result in an error return value if the previous Hmd has not been destroyed.
 ///
-/// \param[in] type Indicates the HMD type to emulate.
 /// \param[out] pHmd Provides a pointer to an ovrHmd which will be written to upon success.
-/// \return Returns an ovrResult indicating success or failure.
+/// \param[out] luid Provides a system specific graphics adapter identifier that locates which
+/// graphics adapter has the HMD attached. This must match the adapter used by the application
+/// or no rendering output will be possible. This is important for stability on multi-adapter systems. An
+/// application that simply chooses the default adapter will not run reliably on multi-adapter systems.
+/// \return Returns an ovrResult indicating success or failure. Upon failure
+///         the returned pHmd will be NULL.
 ///
-/// \see ovrHmd_Create
+/// <b>Example code</b>
+///     \code{.cpp}
+///         ovrHmd hmd;
+///         ovrGraphicsLuid luid;
+///         ovrResult result = ovr_Create(&hmd, &luid);
+///         if(OVR_FAILURE(result))
+///            ...
+///     \endcode
 ///
-OVR_PUBLIC_FUNCTION(ovrResult) ovrHmd_CreateDebug(ovrHmdType type, ovrHmd* pHmd);
+/// \see ovr_Destroy
+///
+OVR_PUBLIC_FUNCTION(ovrResult) ovr_Create(ovrHmd* pHmd, ovrGraphicsLuid* pLuid);
+
 
 /// Destroys the HMD.
 ///
-/// \param[in] hmd Specifies an ovrHmd previously returned by ovrHmd_Create.
-/// \see ovrHmd_Create
+/// \param[in] hmd Specifies an ovrHmd previously returned by ovr_Create.
+/// \see ovr_Create
 ///
-OVR_PUBLIC_FUNCTION(void) ovrHmd_Destroy(ovrHmd hmd);
+OVR_PUBLIC_FUNCTION(void) ovr_Destroy(ovrHmd hmd);
+
 
 /// Returns ovrHmdCaps bits that are currently enabled.
 ///
-/// Note that this value is different from ovrHmdDesc::HmdCaps, which describes what
+/// Note that this value is different from ovrHmdDesc::AvailableHmdCaps, which describes what
 /// capabilities are available for that HMD.
 ///
 /// \return Returns a combination of zero or more ovrHmdCaps.
 /// \see ovrHmdCaps
 ///
-OVR_PUBLIC_FUNCTION(unsigned int) ovrHmd_GetEnabledCaps(ovrHmd hmd);
+OVR_PUBLIC_FUNCTION(unsigned int) ovr_GetEnabledCaps(ovrHmd hmd);
+
 
 /// Modifies capability bits described by ovrHmdCaps that can be modified,
 /// such as ovrHmdCap_LowPersistance.
 ///
-/// \param[in] hmd Specifies an ovrHmd previously returned by ovrHmd_Create.
+/// \param[in] hmd Specifies an ovrHmd previously returned by ovr_Create.
 /// \param[in] hmdCaps A combination of 0 or more ovrHmdCaps.
 ///
 /// \see ovrHmdCaps
 ///
-OVR_PUBLIC_FUNCTION(void) ovrHmd_SetEnabledCaps(ovrHmd hmd, unsigned int hmdCaps);
+OVR_PUBLIC_FUNCTION(void) ovr_SetEnabledCaps(ovrHmd hmd, unsigned int hmdCaps);
 
 //@}
 
@@ -1025,27 +1133,27 @@ OVR_PUBLIC_FUNCTION(void) ovrHmd_SetEnabledCaps(ovrHmd hmd, unsigned int hmdCaps
 
 /// Starts sensor sampling, enabling specified capabilities, described by ovrTrackingCaps.
 ///
-/// Use 0 for both supportedTrackingCaps and requiredTrackingCaps to disable tracking.
-/// ovrHmd_ConfigureTracking can be called multiple times with the same or different values
+/// Use 0 for both requestedTrackingCaps and requiredTrackingCaps to disable tracking.
+/// ovr_ConfigureTracking can be called multiple times with the same or different values
 /// for a given ovrHmd.
 ///
-/// \param[in] hmd Specifies an ovrHmd previously returned by ovrHmd_Create.
+/// \param[in] hmd Specifies an ovrHmd previously returned by ovr_Create.
 ///
-/// \param[in] supportedTrackingCaps Specifies support that is requested. The function will succeed
+/// \param[in] requestedTrackingCaps specifies support that is requested. The function will succeed
 ///            even if these caps are not available (i.e. sensor or camera is unplugged). Support
 ///            will automatically be enabled if the device is plugged in later. Software should
 ///            check ovrTrackingState.StatusFlags for real-time status.
 ///
 /// \param[in] requiredTrackingCaps Specifies sensor capabilities required at the time of the call.
 ///            If they are not available, the function will fail. Pass 0 if only specifying
-///            supportedTrackingCaps.
+///            requestedTrackingCaps.
 ///
-/// \return Returns an ovrResult indicating success or failure. In the case of failure, use 
+/// \return Returns an ovrResult indicating success or failure. In the case of failure, use
 ///         ovr_GetLastErrorInfo to get more information.
 ///
 /// \see ovrTrackingCaps
 ///
-OVR_PUBLIC_FUNCTION(ovrResult) ovrHmd_ConfigureTracking(ovrHmd hmd, unsigned int supportedTrackingCaps,
+OVR_PUBLIC_FUNCTION(ovrResult) ovr_ConfigureTracking(ovrHmd hmd, unsigned int requestedTrackingCaps,
                                                       unsigned int requiredTrackingCaps);
 
 /// Re-centers the sensor position and orientation.
@@ -1054,9 +1162,9 @@ OVR_PUBLIC_FUNCTION(ovrResult) ovrHmd_ConfigureTracking(ovrHmd hmd, unsigned int
 /// The Roll and pitch orientation components are always determined by gravity and cannot
 /// be redefined. All future tracking will report values relative to this new reference position.
 ///
-/// \param[in] hmd Specifies an ovrHmd previously returned by ovrHmd_Create.
+/// \param[in] hmd Specifies an ovrHmd previously returned by ovr_Create.
 ///
-OVR_PUBLIC_FUNCTION(void) ovrHmd_RecenterPose(ovrHmd hmd);
+OVR_PUBLIC_FUNCTION(void) ovr_RecenterPose(ovrHmd hmd);
 
 
 /// Returns tracking state reading based on the specified absolute system time.
@@ -1066,20 +1174,50 @@ OVR_PUBLIC_FUNCTION(void) ovrHmd_RecenterPose(ovrHmd hmd);
 ///
 /// This may also be used for more refined timing of front buffer rendering logic, and so on.
 ///
-/// \param[in] hmd Specifies an ovrHmd previously returned by ovrHmd_Create.
-/// \param[in] absTime Specifies the absolute future time to predict the return 
+/// \param[in] hmd Specifies an ovrHmd previously returned by ovr_Create.
+/// \param[in] absTime Specifies the absolute future time to predict the return
 ///            ovrTrackingState value. Use 0 to request the most recent tracking state.
 /// \return Returns the ovrTrackingState that is predicted for the given absTime.
 ///
-/// \see ovrTrackingState, ovrHmd_GetEyePoses, ovr_GetTimeInSeconds
+/// \see ovrTrackingState, ovr_GetEyePoses, ovr_GetTimeInSeconds
 ///
-OVR_PUBLIC_FUNCTION(ovrTrackingState) ovrHmd_GetTrackingState(ovrHmd hmd, double absTime);
+OVR_PUBLIC_FUNCTION(ovrTrackingState) ovr_GetTrackingState(ovrHmd hmd, double absTime);
 
 
+/// Returns the most recent input state for controllers, without positional tracking info.
+/// Developers can tell whether the same state was returned by checking the PacketNumber.
+///
+/// \param[out] inputState Input state that will be filled in.
+/// \param[in] controllerTypeMask Specifies which controllers the input will be returned for.
+///            Described by ovrControllerType.
+/// \return Returns ovrSuccess if the new state was successfully obtained.
+///
+/// \see ovrControllerType
+///
+OVR_PUBLIC_FUNCTION(ovrResult) ovr_GetInputState(ovrHmd hmd, unsigned int controllerTypeMask, ovrInputState* inputState);
+
+
+/// Turns on vibration of the given controller.
+///
+/// To disable vibration, call ovr_SetControllerVibration with an amplitude of 0.
+/// Vibration automatically stops after a nominal amount of time, so if you want vibration 
+/// to be continuous over multiple seconds then you need to call this function periodically.
+///
+/// \param[in] hmd Specifies an ovrHmd previously returned by ovr_Create.
+/// \param[in] controllerTypeMask Specifies controllers to apply the vibration to.
+/// \param[in] frequency Specifies a vibration frequency in the range of 0.0 to 1.0. 
+///            Currently the only valid values are 0.0, 0.5, and 1.0 and other values will
+///            be clamped to one of these.
+/// \param[in] amplitude Specifies a vibration amplitude in the range of 0.0 to 1.0.
+///
+/// \return Returns ovrSuccess upon success.
+///
+/// \see ovrControllerType
+/// 
+OVR_PUBLIC_FUNCTION(ovrResult) ovr_SetControllerVibration(ovrHmd hmd, unsigned int controllerTypeMask,
+                                                            float frequency, float amplitude);
 
 ///@}
-
-
 
 
 //-------------------------------------------------------------------------------------
@@ -1087,7 +1225,7 @@ OVR_PUBLIC_FUNCTION(ovrTrackingState) ovrHmd_GetTrackingState(ovrHmd hmd, double
 //
 ///@{
 
-/// Describes layer types that can be passed to ovrHmd_SubmitFrame.
+/// Describes layer types that can be passed to ovr_SubmitFrame.
 /// Each layer type has an associated struct, such as ovrLayerEyeFov.
 ///
 /// \see ovrLayerHeader
@@ -1104,7 +1242,7 @@ typedef enum ovrLayerType_
 } ovrLayerType;
 
 
-/// Identifies flags used by ovrLayerHeader and which are passed to ovrHmd_SubmitFrame.
+/// Identifies flags used by ovrLayerHeader and which are passed to ovr_SubmitFrame.
 ///
 /// \see ovrLayerHeader
 ///
@@ -1124,7 +1262,7 @@ typedef enum ovrLayerFlags_
 ///
 /// ovrLayerHeader is used as a base member in these larger structs.
 /// This struct cannot be used by itself except for the case that Type is ovrLayerType_Disabled.
-/// 
+///
 /// \see ovrLayerType, ovrLayerFlags
 ///
 typedef struct OVR_ALIGNAS(OVR_PTR_SIZE) ovrLayerHeader_
@@ -1135,28 +1273,28 @@ typedef struct OVR_ALIGNAS(OVR_PTR_SIZE) ovrLayerHeader_
 
 
 /// Describes a layer that specifies a monoscopic or stereoscopic view.
-/// This is the kind of layer that's typically used as layer 0 to ovrHmd_SubmitFrame,
+/// This is the kind of layer that's typically used as layer 0 to ovr_SubmitFrame,
 /// as it is the kind of layer used to render a 3D stereoscopic view.
 ///
 /// Three options exist with respect to mono/stereo texture usage:
-///    - ColorTexture[0] and ColorTexture[1] contain the left and right stereo renderings, respectively. 
+///    - ColorTexture[0] and ColorTexture[1] contain the left and right stereo renderings, respectively.
 ///      Viewport[0] and Viewport[1] refer to ColorTexture[0] and ColorTexture[1], respectively.
-///    - ColorTexture[0] contains both the left and right renderings, ColorTexture[1] is NULL, 
+///    - ColorTexture[0] contains both the left and right renderings, ColorTexture[1] is NULL,
 ///      and Viewport[0] and Viewport[1] refer to sub-rects with ColorTexture[0].
-///    - ColorTexture[0] contains a single monoscopic rendering, and Viewport[0] and 
+///    - ColorTexture[0] contains a single monoscopic rendering, and Viewport[0] and
 ///      Viewport[1] both refer to that rendering.
 ///
-/// \see ovrSwapTextureSet, ovrHmd_SubmitFrame
+/// \see ovrSwapTextureSet, ovr_SubmitFrame
 ///
 typedef struct OVR_ALIGNAS(OVR_PTR_SIZE) ovrLayerEyeFov_
 {
     /// Header.Type must be ovrLayerType_EyeFov.
     ovrLayerHeader      Header;
 
-    /// ovrSwapTextureSets for the left and right eye respectively. 
+    /// ovrSwapTextureSets for the left and right eye respectively.
     /// The second one of which can be NULL for cases described above.
     ovrSwapTextureSet*  ColorTexture[ovrEye_Count];
- 
+
     /// Specifies the ColorTexture sub-rect UV coordinates.
     /// Both Viewport[0] and Viewport[1] must be valid.
     ovrRecti            Viewport[ovrEye_Count];
@@ -1172,7 +1310,7 @@ typedef struct OVR_ALIGNAS(OVR_PTR_SIZE) ovrLayerEyeFov_
 } ovrLayerEyeFov;
 
 
-/// Describes a layer that specifies a monoscopic or stereoscopic view, 
+/// Describes a layer that specifies a monoscopic or stereoscopic view,
 /// with depth textures in addition to color textures. This is typically used to support
 /// positional time warp. This struct is the same as ovrLayerEyeFov, but with the addition
 /// of DepthTexture and ProjectionDesc.
@@ -1180,21 +1318,21 @@ typedef struct OVR_ALIGNAS(OVR_PTR_SIZE) ovrLayerEyeFov_
 /// ProjectionDesc can be created using ovrTimewarpProjectionDesc_FromProjection.
 ///
 /// Three options exist with respect to mono/stereo texture usage:
-///    - ColorTexture[0] and ColorTexture[1] contain the left and right stereo renderings, respectively. 
+///    - ColorTexture[0] and ColorTexture[1] contain the left and right stereo renderings, respectively.
 ///      Viewport[0] and Viewport[1] refer to ColorTexture[0] and ColorTexture[1], respectively.
-///    - ColorTexture[0] contains both the left and right renderings, ColorTexture[1] is NULL, 
+///    - ColorTexture[0] contains both the left and right renderings, ColorTexture[1] is NULL,
 ///      and Viewport[0] and Viewport[1] refer to sub-rects with ColorTexture[0].
-///    - ColorTexture[0] contains a single monoscopic rendering, and Viewport[0] and 
+///    - ColorTexture[0] contains a single monoscopic rendering, and Viewport[0] and
 ///      Viewport[1] both refer to that rendering.
 ///
-/// \see ovrSwapTextureSet, ovrHmd_SubmitFrame
+/// \see ovrSwapTextureSet, ovr_SubmitFrame
 ///
 typedef struct OVR_ALIGNAS(OVR_PTR_SIZE) ovrLayerEyeFovDepth_
 {
     /// Header.Type must be ovrLayerType_EyeFovDepth.
     ovrLayerHeader      Header;
 
-    /// ovrSwapTextureSets for the left and right eye respectively. 
+    /// ovrSwapTextureSets for the left and right eye respectively.
     /// The second one can be NULL in cases described above.
     ovrSwapTextureSet*  ColorTexture[ovrEye_Count];
 
@@ -1224,19 +1362,19 @@ typedef struct OVR_ALIGNAS(OVR_PTR_SIZE) ovrLayerEyeFovDepth_
 /// Describes a layer of Quad type, which is a single quad in world or viewer space.
 /// It is used for both ovrLayerType_QuadInWorld and ovrLayerType_QuadHeadLocked.
 /// This type of layer represents a single object placed in the world and not a stereo
-/// view of the world itself. 
+/// view of the world itself.
 ///
 /// A typical use of ovrLayerType_QuadInWorld is to draw a television screen in a room
 /// that for some reason is more convenient to draw as a layer than as part of the main
-/// view in layer 0. For example, it could implement a 3D popup GUI that is drawn at a 
+/// view in layer 0. For example, it could implement a 3D popup GUI that is drawn at a
 /// higher resolution than layer 0 to improve fidelity of the GUI.
 ///
-/// A use of ovrLayerType_QuadHeadLocked might be to implement a debug HUD visible in 
+/// A use of ovrLayerType_QuadHeadLocked might be to implement a debug HUD visible in
 /// the HMD.
 ///
 /// Quad layers are visible from both sides; they are not back-face culled.
 ///
-/// \see ovrSwapTextureSet, ovrHmd_SubmitFrame
+/// \see ovrSwapTextureSet, ovr_SubmitFrame
 ///
 typedef struct OVR_ALIGNAS(OVR_PTR_SIZE) ovrLayerQuad_
 {
@@ -1258,20 +1396,20 @@ typedef struct OVR_ALIGNAS(OVR_PTR_SIZE) ovrLayerQuad_
 } ovrLayerQuad;
 
 
-/// Describes a layer which is copied to the HMD as-is. Neither distortion, time warp, 
+/// Describes a layer which is copied to the HMD as-is. Neither distortion, time warp,
 /// nor vignetting is applied to ColorTexture before it's copied to the HMD. The application
 /// can, however implement these kinds of effects itself before submitting the layer.
-/// This layer can be used for application-based distortion rendering and can also be 
+/// This layer can be used for application-based distortion rendering and can also be
 /// used for implementing a debug HUD that's viewed on the mirror texture.
 ///
-/// \see ovrSwapTextureSet, ovrHmd_SubmitFrame
+/// \see ovrSwapTextureSet, ovr_SubmitFrame
 ///
 typedef struct OVR_ALIGNAS(OVR_PTR_SIZE) ovrLayerDirect_
 {
     /// Header.Type must be ovrLayerType_EyeDirect.
     ovrLayerHeader      Header;
 
-    /// ovrSwapTextureSets for the left and right eye respectively. 
+    /// ovrSwapTextureSets for the left and right eye respectively.
     /// The second one of which can be NULL for cases described above.
     ovrSwapTextureSet*  ColorTexture[ovrEye_Count];
 
@@ -1310,39 +1448,39 @@ typedef union ovrLayer_Union_
 ///
 //@{
 
-// TextureSet creation is rendering API-specific, so the ovrHmd_CreateSwapTextureSetXX
+// TextureSet creation is rendering API-specific, so the ovr_CreateSwapTextureSetXX
 // methods can be found in the rendering API-specific headers, such as OVR_CAPI_D3D.h and OVR_CAPI_GL.h
 
 
 /// Destroys an ovrSwapTextureSet and frees all the resources associated with it.
 ///
-/// \param[in] hmd Specifies an ovrHmd previously returned by ovrHmd_Create.
+/// \param[in] hmd Specifies an ovrHmd previously returned by ovr_Create.
 /// \param[in] textureSet Specifies the ovrSwapTextureSet to destroy. If it is NULL then this function has no effect.
 ///
-/// \see ovrHmd_CreateSwapTextureSetD3D11, ovrHmd_CreateSwapTextureSetGL
+/// \see ovr_CreateSwapTextureSetD3D11, ovr_CreateSwapTextureSetGL
 ///
-OVR_PUBLIC_FUNCTION(void) ovrHmd_DestroySwapTextureSet(ovrHmd hmd, ovrSwapTextureSet* textureSet);
+OVR_PUBLIC_FUNCTION(void) ovr_DestroySwapTextureSet(ovrHmd hmd, ovrSwapTextureSet* textureSet);
 
 
 /// Destroys a mirror texture previously created by one of the mirror texture creation functions.
 ///
-/// \param[in] hmd Specifies an ovrHmd previously returned by ovrHmd_Create.
+/// \param[in] hmd Specifies an ovrHmd previously returned by ovr_Create.
 /// \param[in] mirrorTexture Specifies the ovrTexture to destroy. If it is NULL then this function has no effect.
 ///
-/// \see ovrHmd_CreateMirrorTextureD3D11, ovrHmd_CreateMirrorTextureGL
+/// \see ovr_CreateMirrorTextureD3D11, ovr_CreateMirrorTextureGL
 ///
-OVR_PUBLIC_FUNCTION(void) ovrHmd_DestroyMirrorTexture(ovrHmd hmd, ovrTexture* mirrorTexture);
+OVR_PUBLIC_FUNCTION(void) ovr_DestroyMirrorTexture(ovrHmd hmd, ovrTexture* mirrorTexture);
 
 
 /// Calculates the recommended viewport size for rendering a given eye within the HMD
-/// with a given FOV cone. 
+/// with a given FOV cone.
 ///
 /// Higher FOV will generally require larger textures to maintain quality.
 /// Apps packing multiple eye views together on the same texture should ensure there are
 /// at least 8 pixels of padding between them to prevent texture filtering and chromatic
 /// aberration causing images to leak between the two eye views.
 ///
-/// \param[in] hmd Specifies an ovrHmd previously returned by ovrHmd_Create.
+/// \param[in] hmd Specifies an ovrHmd previously returned by ovr_Create.
 /// \param[in] eye Specifies which eye (left or right) to calculate for.
 /// \param[in] fov Specifies the ovrFovPort to use.
 /// \param[in] pixelsPerDisplayPixel Specifies the ratio of the number of render target pixels
@@ -1350,32 +1488,32 @@ OVR_PUBLIC_FUNCTION(void) ovrHmd_DestroyMirrorTexture(ovrHmd hmd, ovrTexture* mi
 ///            values can improve performance, higher values give improved quality.
 /// \return Returns the texture width and height size.
 ///
-OVR_PUBLIC_FUNCTION(ovrSizei) ovrHmd_GetFovTextureSize(ovrHmd hmd, ovrEyeType eye, ovrFovPort fov,
+OVR_PUBLIC_FUNCTION(ovrSizei) ovr_GetFovTextureSize(ovrHmd hmd, ovrEyeType eye, ovrFovPort fov,
                                                        float pixelsPerDisplayPixel);
 
 /// Computes the distortion viewport, view adjust, and other rendering parameters for
 /// the specified eye.
 ///
-/// \param[in] hmd Specifies an ovrHmd previously returned by ovrHmd_Create.
+/// \param[in] hmd Specifies an ovrHmd previously returned by ovr_Create.
 /// \param[in] eyeType Specifies which eye (left or right) for which to perform calculations.
 /// \param[in] fov Specifies the ovrFovPort to use.
 /// \return Returns the computed ovrEyeRenderDesc for the given eyeType and field of view.
 ///
 /// \see ovrEyeRenderDesc
 ///
-OVR_PUBLIC_FUNCTION(ovrEyeRenderDesc) ovrHmd_GetRenderDesc(ovrHmd hmd,
+OVR_PUBLIC_FUNCTION(ovrEyeRenderDesc) ovr_GetRenderDesc(ovrHmd hmd,
                                                            ovrEyeType eyeType, ovrFovPort fov);
 
 /// Submits layers for distortion and display.
 ///
-/// ovrHmd_SubmitFrame triggers distortion and processing which might happen asynchronously. 
+/// ovr_SubmitFrame triggers distortion and processing which might happen asynchronously.
 /// The function will return when there is room in the submission queue and surfaces
 /// are available. Distortion might or might not have completed.
 ///
-/// \param[in] hmd Specifies an ovrHmd previously returned by ovrHmd_Create.
+/// \param[in] hmd Specifies an ovrHmd previously returned by ovr_Create.
 ///
-/// \param[in] frameIndex Specifies the targeted application frame index, or 0 to refer to one frame 
-///        after the last time ovrHmd_SubmitFrame was called.
+/// \param[in] frameIndex Specifies the targeted application frame index, or 0 to refer to one frame
+///        after the last time ovr_SubmitFrame was called.
 ///
 /// \param[in] viewScaleDesc Provides additional information needed only if layerPtrList contains
 ///        a ovrLayerType_QuadInWorld or ovrLayerType_QuadHeadLocked. If NULL, a default
@@ -1384,7 +1522,7 @@ OVR_PUBLIC_FUNCTION(ovrEyeRenderDesc) ovrHmd_GetRenderDesc(ovrHmd hmd,
 /// \param[in] layerPtrList Specifies a list of ovrLayer pointers, which can include NULL entries to
 ///        indicate that any previously shown layer at that index is to not be displayed.
 ///        Each layer header must be a part of a layer structure such as ovrLayerEyeFov or ovrLayerQuad,
-///        with Header.Type identifying its type. A NULL layerPtrList entry in the array indicates the 
+///        with Header.Type identifying its type. A NULL layerPtrList entry in the array indicates the
 //         absence of the given layer.
 ///
 /// \param[in] layerCount Indicates the number of valid elements in layerPtrList. The maximum
@@ -1392,10 +1530,10 @@ OVR_PUBLIC_FUNCTION(ovrEyeRenderDesc) ovrHmd_GetRenderDesc(ovrHmd hmd,
 ///
 /// - Layers are drawn in the order they are specified in the array, regardless of the layer type.
 ///
-/// - Layers are not remembered between successive calls to ovrHmd_SubmitFrame. A layer must be 
-///   specified in every call to ovrHmd_SubmitFrame or it won't be displayed.
+/// - Layers are not remembered between successive calls to ovr_SubmitFrame. A layer must be
+///   specified in every call to ovr_SubmitFrame or it won't be displayed.
 ///
-/// - If a layerPtrList entry that was specified in a previous call to ovrHmd_SubmitFrame is
+/// - If a layerPtrList entry that was specified in a previous call to ovr_SubmitFrame is
 ///   passed as NULL or is of type ovrLayerType_Disabled, that layer is no longer displayed.
 ///
 /// - A layerPtrList entry can be of any layer type and multiple entries of the same layer type
@@ -1407,7 +1545,7 @@ OVR_PUBLIC_FUNCTION(ovrEyeRenderDesc) ovrHmd_GetRenderDesc(ovrHmd hmd,
 ///         ovrLayerQuad    layer1;
 ///           ...
 ///         ovrLayerHeader* layers[2] = { &layer0.Header, &layer1.Header };
-///         ovrResult result = ovrHmd_SubmitFrame(hmd, frameIndex, nullptr, layers, 2);
+///         ovrResult result = ovr_SubmitFrame(hmd, frameIndex, nullptr, layers, 2);
 ///     \endcode
 ///
 /// \return Returns an ovrResult for which OVR_SUCCESS(result) is false upon error and true
@@ -1415,12 +1553,17 @@ OVR_PUBLIC_FUNCTION(ovrEyeRenderDesc) ovrHmd_GetRenderDesc(ovrHmd hmd,
 ///     - ovrSuccess: rendering completed successfully.
 ///     - ovrSuccess_NotVisible: rendering completed successfully but was not displayed on the HMD,
 ///       usually because another application currently has ownership of the HMD. Applications receiving
-///       this result should stop rendering new content, but continue to call ovrHmd_SubmitFrame periodically
+///       this result should stop rendering new content, but continue to call ovr_SubmitFrame periodically
 ///       until it returns a value other than ovrSuccess_NotVisible.
+///     - ovrError_DisplayLost: The session has become invalid (such as due to a device removal)
+///       and the shared resources need to be released (ovr_DestroySwapTextureSet), the session needs to
+///       destroyed (ovr_Destory) and recreated (ovr_Create), and new resources need to be created
+///       (ovr_CreateSwapTextureSetXXX). The application's existing private graphics resources do not
+///       need to be recreated unless the new ovr_Create call returns a different GraphicsLuid.
 ///
-/// \see ovrHmd_GetFrameTiming, ovrViewScaleDesc, ovrLayerHeader
+/// \see ovr_GetFrameTiming, ovrViewScaleDesc, ovrLayerHeader
 ///
-OVR_PUBLIC_FUNCTION(ovrResult) ovrHmd_SubmitFrame(ovrHmd hmd, unsigned int frameIndex,
+OVR_PUBLIC_FUNCTION(ovrResult) ovr_SubmitFrame(ovrHmd hmd, unsigned int frameIndex,
                                                   const ovrViewScaleDesc* viewScaleDesc,
                                                   ovrLayerHeader const * const * layerPtrList, unsigned int layerCount);
 ///@}
@@ -1436,31 +1579,19 @@ OVR_PUBLIC_FUNCTION(ovrResult) ovrHmd_SubmitFrame(ovrHmd hmd, unsigned int frame
 ///
 /// The application should increment frameIndex for each successively targeted frame,
 /// and pass that index to any relevent OVR functions that need to apply to the frame
-/// identified by that index. 
+/// identified by that index.
 ///
-/// This function is thread-safe and allows for multiple application threads to target 
+/// This function is thread-safe and allows for multiple application threads to target
 /// their processing to the same displayed frame.
 /// 
-/// \param[in] hmd Specifies an ovrHmd previously returned by ovrHmd_Create.
+/// \param[in] hmd Specifies an ovrHmd previously returned by ovr_Create.
 /// \param[in] frameIndex Identifies the frame the caller wishes to target.
 /// \return Returns the ovrFrameTiming for the given frameIndex.
-/// \see ovrFrameTiming, ovrHmd_ResetFrameTiming
+/// \see ovrFrameTiming
 ///
-OVR_PUBLIC_FUNCTION(ovrFrameTiming) ovrHmd_GetFrameTiming(ovrHmd hmd, unsigned int frameIndex);
+OVR_PUBLIC_FUNCTION(ovrFrameTiming) ovr_GetFrameTiming(ovrHmd hmd, unsigned int frameIndex);
 
-/// Initializes and resets frame time tracking. 
-///
-/// This is typically not necessary, but is helpful if the application changes vsync state or 
-/// video mode. vsync is assumed to be on if this isn't called. Resets internal frame index to 
-/// the specified number.
-///
-/// \param[in] hmd Specifies an ovrHmd previously returned by ovrHmd_Create.
-/// \param[in] frameIndex Identifies the frame the caller wishes to target.
-/// \see ovrHmd_GetFrameTiming
-///
-OVR_PUBLIC_FUNCTION(void) ovrHmd_ResetFrameTiming(ovrHmd hmd, unsigned int frameIndex);
-
-/// Returns global, absolute high-resolution time in seconds. 
+/// Returns global, absolute high-resolution time in seconds.
 ///
 /// The time frame of reference for this function is not specified and should not be
 /// depended upon.
@@ -1473,23 +1604,68 @@ OVR_PUBLIC_FUNCTION(double) ovr_GetTimeInSeconds();
 /// Performance HUD enables the HMD user to see information critical to
 /// the real-time operation of the VR application such as latency timing,
 /// and CPU & GPU performance metrics
-/// 
+///
 ///     App can toggle performance HUD modes as such:
 ///     \code{.cpp}
 ///         ovrPerfHudMode PerfHudMode = ovrPerfHud_LatencyTiming;
-///         ovrHmd_SetInt(Hmd, "PerfHudMode", (int)PerfHudMode);
+///         ovr_SetInt(Hmd, OVR_PERF_HUD_MODE, (int)PerfHudMode);
 ///     \endcode
 ///
 typedef enum ovrPerfHudMode_
 {
-    ovrPerfHud_Off = 0,                ///< Turns off the performance HUD
-    ovrPerfHud_LatencyTiming = 1,      ///< Shows latency related timing info
-    ovrPerfHud_RenderTiming = 2,       ///< Shows CPU & GPU timing info
-    ovrPerfHud_Count = 2,              ///< \internal Count of enumerated elements.
-    ovrPerfHud_EnumSize = 0x7fffffff   ///< \internal Force type int32_t.
+    ovrPerfHud_Off                = 0,  ///< Turns off the performance HUD
+    ovrPerfHud_LatencyTiming      = 1,  ///< Shows latency related timing info
+    ovrPerfHud_RenderTiming       = 2,  ///< Shows CPU & GPU timing info
+    ovrPerfHud_PerfHeadroom       = 3,  ///< Shows available performance headroom in a "consumer-friendly" way
+    ovrPerfHud_VersionInfo        = 4,  ///< Shows SDK Version Info
+    ovrPerfHud_Count,                   ///< \internal Count of enumerated elements.
+    ovrPerfHud_EnumSize = 0x7fffffff    ///< \internal Force type int32_t.
 } ovrPerfHudMode;
 
 ///@}
+
+/// Debug HUD is provided to help developers gauge and debug the fidelity of their app's
+/// stereo rendering characteristics. Using the provided quad and crosshair guides, 
+/// the developer can verify various aspects such as VR tracking units (e.g. meters),
+/// stereo camera-parallax properties (e.g. making sure objects at infinity are rendered
+/// with the proper separation), measuring VR geometry sizes and distances and more.
+///
+///     App can toggle the debug HUD modes as such:
+///     \code{.cpp}
+///         ovrDebugHudStereoMode DebugHudMode = ovrDebugHudStereo_QuadWithCrosshair;
+///         ovr_SetInt(Hmd, OVR_DEBUG_HUD_STEREO_MODE, (int)DebugHudMode);
+///     \endcode
+///
+/// The app can modify the visual properties of the stereo guide (i.e. quad, crosshair)
+/// using the ovr_SetFloatArray function. For a list of tweakable properties,
+/// see the OVR_DEBUG_HUD_STEREO_GUIDE_* keys in the OVR_CAPI_Keys.h header file.
+typedef enum ovrDebugHudStereoMode_
+{
+    ovrDebugHudStereo_Off                 = 0,  ///< Turns off the Stereo Debug HUD
+    ovrDebugHudStereo_Quad                = 1,  ///< Renders Quad in world for Stereo Debugging
+    ovrDebugHudStereo_QuadWithCrosshair   = 2,  ///< Renders Quad+crosshair in world for Stereo Debugging
+    ovrDebugHudStereo_CrosshairAtInfinity = 3,  ///< Renders screen-space crosshair at infinity for Stereo Debugging
+    ovrDebugHudStereo_Count,                    ///< \internal Count of enumerated elements
+
+    ovrDebugHudStereo_EnumSize = 0x7fffffff     ///< \internal Force type int32_t
+} ovrDebugHudStereoMode;
+
+
+
+
+/// Should be called when the headset is placed on a new user.
+/// Previously named ovrHmd_ResetOnlyBackOfHeadTrackingForConnectConf.
+///
+/// This may be removed in a future SDK version.
+///
+OVR_PUBLIC_FUNCTION(void) ovr_ResetBackOfHeadTracking(ovrHmd hmd);
+
+
+/// Should be called when a tracking camera is moved.
+///
+/// This may be removed in a future SDK version.
+///
+OVR_PUBLIC_FUNCTION(void) ovr_ResetMulticameraTracking(ovrHmd hmd);
 
 
 
@@ -1503,112 +1679,111 @@ typedef enum ovrPerfHudMode_
 
 /// Reads a boolean property.
 ///
-/// \param[in] hmd Specifies an ovrHmd previously returned by ovrHmd_Create.
+/// \param[in] hmd Specifies an ovrHmd previously returned by ovr_Create.
 /// \param[in] propertyName The name of the property, which needs to be valid for only the call.
 /// \param[in] defaultVal specifes the value to return if the property couldn't be read.
 /// \return Returns the property interpreted as a boolean value. Returns defaultVal if
 ///         the property doesn't exist.
-OVR_PUBLIC_FUNCTION(ovrBool) ovrHmd_GetBool(ovrHmd hmd, const char* propertyName, ovrBool defaultVal);
+OVR_PUBLIC_FUNCTION(ovrBool) ovr_GetBool(ovrHmd hmd, const char* propertyName, ovrBool defaultVal);
 
 /// Writes or creates a boolean property.
 /// If the property wasn't previously a boolean property, it is changed to a boolean property.
 ///
-/// \param[in] hmd Specifies an ovrHmd previously returned by ovrHmd_Create.
+/// \param[in] hmd Specifies an ovrHmd previously returned by ovr_Create.
 /// \param[in] propertyName The name of the property, which needs to be valid only for the call.
 /// \param[in] value The value to write.
-/// \return Returns true if successful, otherwise false. A false result should only occur if the property  
+/// \return Returns true if successful, otherwise false. A false result should only occur if the property
 ///         name is empty or if the property is read-only.
-OVR_PUBLIC_FUNCTION(ovrBool) ovrHmd_SetBool(ovrHmd hmd, const char* propertyName, ovrBool value);
+OVR_PUBLIC_FUNCTION(ovrBool) ovr_SetBool(ovrHmd hmd, const char* propertyName, ovrBool value);
 
 
 /// Reads an integer property.
 ///
-/// \param[in] hmd Specifies an ovrHmd previously returned by ovrHmd_Create.
+/// \param[in] hmd Specifies an ovrHmd previously returned by ovr_Create.
 /// \param[in] propertyName The name of the property, which needs to be valid only for the call.
 /// \param[in] defaultVal Specifes the value to return if the property couldn't be read.
 /// \return Returns the property interpreted as an integer value. Returns defaultVal if
 ///         the property doesn't exist.
-OVR_PUBLIC_FUNCTION(int) ovrHmd_GetInt(ovrHmd hmd, const char* propertyName, int defaultVal);
+OVR_PUBLIC_FUNCTION(int) ovr_GetInt(ovrHmd hmd, const char* propertyName, int defaultVal);
 
 /// Writes or creates an integer property.
 ///
 /// If the property wasn't previously a boolean property, it is changed to an integer property.
 ///
-/// \param[in] hmd Specifies an ovrHmd previously returned by ovrHmd_Create.
+/// \param[in] hmd Specifies an ovrHmd previously returned by ovr_Create.
 /// \param[in] propertyName The name of the property, which needs to be valid only for the call.
 /// \param[in] value The value to write.
-/// \return Returns true if successful, otherwise false. A false result should only occur if the property  
+/// \return Returns true if successful, otherwise false. A false result should only occur if the property
 ///         name is empty or if the property is read-only.
-OVR_PUBLIC_FUNCTION(ovrBool) ovrHmd_SetInt(ovrHmd hmd, const char* propertyName, int value);
+OVR_PUBLIC_FUNCTION(ovrBool) ovr_SetInt(ovrHmd hmd, const char* propertyName, int value);
 
 
 /// Reads a float property.
 ///
-/// \param[in] hmd Specifies an ovrHmd previously returned by ovrHmd_Create.
+/// \param[in] hmd Specifies an ovrHmd previously returned by ovr_Create.
 /// \param[in] propertyName The name of the property, which needs to be valid only for the call.
 /// \param[in] defaultVal specifes the value to return if the property couldn't be read.
 /// \return Returns the property interpreted as an float value. Returns defaultVal if
 ///         the property doesn't exist.
-OVR_PUBLIC_FUNCTION(float) ovrHmd_GetFloat(ovrHmd hmd, const char* propertyName, float defaultVal);
+OVR_PUBLIC_FUNCTION(float) ovr_GetFloat(ovrHmd hmd, const char* propertyName, float defaultVal);
 
 /// Writes or creates a float property.
 /// If the property wasn't previously a float property, it's changed to a float property.
 ///
-/// \param[in] hmd Specifies an ovrHmd previously returned by ovrHmd_Create.
+/// \param[in] hmd Specifies an ovrHmd previously returned by ovr_Create.
 /// \param[in] propertyName The name of the property, which needs to be valid only for the call.
 /// \param[in] value The value to write.
-/// \return Returns true if successful, otherwise false. A false result should only occur if the property  
+/// \return Returns true if successful, otherwise false. A false result should only occur if the property
 ///         name is empty or if the property is read-only.
-OVR_PUBLIC_FUNCTION(ovrBool) ovrHmd_SetFloat(ovrHmd hmd, const char* propertyName, float value);
+OVR_PUBLIC_FUNCTION(ovrBool) ovr_SetFloat(ovrHmd hmd, const char* propertyName, float value);
 
 
 /// Reads a float array property.
 ///
-/// \param[in] hmd Specifies an ovrHmd previously returned by ovrHmd_Create.
+/// \param[in] hmd Specifies an ovrHmd previously returned by ovr_Create.
 /// \param[in] propertyName The name of the property, which needs to be valid only for the call.
 /// \param[in] values An array of float to write to.
 /// \param[in] valuesCapacity Specifies the maximum number of elements to write to the values array.
 /// \return Returns the number of elements read, or 0 if property doesn't exist or is empty.
-OVR_PUBLIC_FUNCTION(unsigned int) ovrHmd_GetFloatArray(ovrHmd hmd, const char* propertyName,
+OVR_PUBLIC_FUNCTION(unsigned int) ovr_GetFloatArray(ovrHmd hmd, const char* propertyName,
                                                        float values[], unsigned int valuesCapacity);
 
 /// Writes or creates a float array property.
 ///
-/// \param[in] hmd Specifies an ovrHmd previously returned by ovrHmd_Create.
+/// \param[in] hmd Specifies an ovrHmd previously returned by ovr_Create.
 /// \param[in] propertyName The name of the property, which needs to be valid only for the call.
 /// \param[in] values An array of float to write from.
 /// \param[in] valuesSize Specifies the number of elements to write.
-/// \return Returns true if successful, otherwise false. A false result should only occur if the property  
+/// \return Returns true if successful, otherwise false. A false result should only occur if the property
 ///         name is empty or if the property is read-only.
-OVR_PUBLIC_FUNCTION(ovrBool) ovrHmd_SetFloatArray(ovrHmd hmd, const char* propertyName,
+OVR_PUBLIC_FUNCTION(ovrBool) ovr_SetFloatArray(ovrHmd hmd, const char* propertyName,
                                                   const float values[], unsigned int valuesSize);
 
 
 /// Reads a string property.
 /// Strings are UTF8-encoded and null-terminated.
 ///
-/// \param[in] hmd Specifies an ovrHmd previously returned by ovrHmd_Create.
+/// \param[in] hmd Specifies an ovrHmd previously returned by ovr_Create.
 /// \param[in] propertyName The name of the property, which needs to be valid only for the call.
 /// \param[in] defaultVal Specifes the value to return if the property couldn't be read.
 /// \return Returns the string property if it exists. Otherwise returns defaultVal, which can be specified as NULL.
-///         The return memory is guaranteed to be valid until next call to ovrHmd_GetString or 
+///         The return memory is guaranteed to be valid until next call to ovr_GetString or
 ///         until the HMD is destroyed, whichever occurs first.
-OVR_PUBLIC_FUNCTION(const char*) ovrHmd_GetString(ovrHmd hmd, const char* propertyName,
+OVR_PUBLIC_FUNCTION(const char*) ovr_GetString(ovrHmd hmd, const char* propertyName,
                                                   const char* defaultVal);
 
 /// Writes or creates a string property.
 /// Strings are UTF8-encoded and null-terminated.
 ///
-/// \param[in] hmd Specifies an ovrHmd previously returned by ovrHmd_Create.
+/// \param[in] hmd Specifies an ovrHmd previously returned by ovr_Create.
 /// \param[in] propertyName The name of the property, which needs to be valid only for the call.
 /// \param[in] value The string property, which only needs to be valid for the duration of the call.
-/// \return Returns true if successful, otherwise false. A false result should only occur if the property  
+/// \return Returns true if successful, otherwise false. A false result should only occur if the property
 ///         name is empty or if the property is read-only.
-OVR_PUBLIC_FUNCTION(ovrBool) ovrHmd_SetString(ovrHmd hmd, const char* propertyName,
+OVR_PUBLIC_FUNCTION(ovrBool) ovr_SetString(ovrHmd hmd, const char* propertyName,
                                               const char* value);
 
 ///@}
-
 
 
 
@@ -1647,8 +1822,8 @@ OVR_STATIC_ASSERT(sizeof(ovrEyeType) == 4,      "ovrEyeType size mismatch");
 OVR_STATIC_ASSERT(sizeof(ovrHmdType) == 4,      "ovrHmdType size mismatch");
 
 OVR_STATIC_ASSERT(sizeof(ovrSensorData) == (11 * 4), "ovrSensorData size mismatch");
-OVR_STATIC_ASSERT(sizeof(ovrTrackingState) == 
-                      sizeof(ovrPoseStatef) + 4 + 2 * sizeof(ovrPosef) + sizeof(ovrSensorData) + 2 * 4,
+OVR_STATIC_ASSERT(sizeof(ovrTrackingState) ==
+                      sizeof(ovrPoseStatef) * 3 + 4 + 2 * sizeof(ovrPosef) + sizeof(ovrSensorData) + 2 * 4,
                       "ovrTrackingState size mismatch");
 OVR_STATIC_ASSERT(sizeof(ovrFrameTiming) == 3 * 8, "ovrFrameTiming size mismatch");
 
@@ -1656,7 +1831,7 @@ OVR_STATIC_ASSERT(sizeof(ovrRenderAPIType) == 4, "ovrRenderAPIType size mismatch
 
 OVR_STATIC_ASSERT(sizeof(ovrTextureHeader) == sizeof(ovrRenderAPIType) + sizeof(ovrSizei),
                       "ovrTextureHeader size mismatch");
-OVR_STATIC_ASSERT(sizeof(ovrTexture) == sizeof(ovrTextureHeader) OVR_ON64(+4) + sizeof(uintptr_t) * 8, 
+OVR_STATIC_ASSERT(sizeof(ovrTexture) == sizeof(ovrTextureHeader) OVR_ON64(+4) + sizeof(uintptr_t) * 8,
                       "ovrTexture size mismatch");
 
 OVR_STATIC_ASSERT(sizeof(ovrStatusBits) == 4, "ovrStatusBits size mismatch");
@@ -1669,26 +1844,37 @@ OVR_STATIC_ASSERT(sizeof(ovrTimewarpProjectionDesc) == 4 * 3, "ovrTimewarpProjec
 OVR_STATIC_ASSERT(sizeof(ovrInitFlags) == 4, "ovrInitFlags size mismatch");
 OVR_STATIC_ASSERT(sizeof(ovrLogLevel) == 4, "ovrLogLevel size mismatch");
 
-OVR_STATIC_ASSERT(sizeof(ovrInitParams) == sizeof(ovrLogCallback) + 4 * 3 OVR_ON64(+4),
+OVR_STATIC_ASSERT(sizeof(ovrInitParams) == 4 + 4 + sizeof(ovrLogCallback) + sizeof(uintptr_t) + 4 + 4,
                       "ovrInitParams size mismatch");
 
-OVR_STATIC_ASSERT(sizeof(ovrHmdDesc) == OVR_ON64(4 +)
-    sizeof(struct ovrHmdStruct*) + sizeof(ovrHmdType) // Handle - Type
-    + sizeof(void*) * 2 + 2 + 2 + 24 // ProductName - SerialNumber
-    + 2 + 2 + 4 * 4 // FirmwareMajor - CameraFrustumFarZInMeters
-    + 4 * 2 + sizeof(ovrFovPort) * 4 // HmdCaps - MaxEyeFov
-    + sizeof(ovrEyeType)* 2 + sizeof(ovrSizei)  // EyeRenderOrder - Resolution
+OVR_STATIC_ASSERT(sizeof(ovrHmdDesc) == 
+    + sizeof(ovrHmdType)                // Type
+    OVR_ON64(+ 4)                       // pad0
+    + 64                                // ProductName 
+    + 64                                // Manufacturer
+    + 2                                 // VendorId
+    + 2                                 // ProductId
+    + 24                                // SerialNumber
+    + 2                                 // FirmwareMajor
+    + 2                                 // FirmwareMinor
+    + 4 * 4                             // CameraFrustumHFovInRadians - CameraFrustumFarZInMeters
+    + 4 * 4                             // AvailableHmdCaps - DefaultTrackingCaps
+    + sizeof(ovrFovPort) * 2            // DefaultEyeFov
+    + sizeof(ovrFovPort) * 2            // MaxEyeFov
+    + sizeof(ovrSizei)                  // Resolution
+    + 4                                 // DisplayRefreshRate
+    OVR_ON64(+ 4)                       // pad1
     , "ovrHmdDesc size mismatch");
 
 
 // -----------------------------------------------------------------------------------
 // ***** Backward compatibility #includes
 //
-// This is at the bottom of this file because the following is dependent on the 
-// declarations above. 
+// This is at the bottom of this file because the following is dependent on the
+// declarations above.
 
 #if !defined(OVR_CAPI_NO_UTILS)
-    #include "OVR_CAPI_Util.h"
+    #include "Extras/OVR_CAPI_Util.h"
 #endif
 
 /// @endcond

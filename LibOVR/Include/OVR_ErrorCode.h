@@ -36,10 +36,12 @@ typedef enum ovrSuccessType_
     /// rendered will not be visible on the HMD. Ideally the app should continue
     /// calling SubmitFrame, but not do any rendering. When the result becomes
     /// ovrSuccess, rendering should continue as usual.
-    ovrSuccess_NotVisible              = 1000,
+    ovrSuccess_NotVisible                 = 1000,
 
-    ovrSuccess_HMDFirmwareMismatch     = 4100,   ///< The HMD Firmware is out of date but is acceptable.
-    ovrSuccess_TrackerFirmwareMismatch = 4101,   ///< The Tracker Firmware is out of date but is acceptable.
+    ovrSuccess_HMDFirmwareMismatch        = 4100,   ///< The HMD Firmware is out of date but is acceptable.
+    ovrSuccess_TrackerFirmwareMismatch    = 4101,   ///< The Tracker Firmware is out of date but is acceptable.
+    ovrSuccess_ControllerFirmwareMismatch = 4104, ///< The controller firmware is out of date but is acceptable
+
 } ovrSuccessType;
 #endif
 
@@ -62,46 +64,60 @@ typedef enum ovrSuccessType_
 typedef enum ovrErrorType_
 {
     /* General errors */
-    ovrError_MemoryAllocationFailure  = -1000,   ///< Failure to allocate memory.
-    ovrError_SocketCreationFailure    = -1001,   ///< Failure to create a socket.
-    ovrError_InvalidHmd               = -1002,   ///< Invalid HMD parameter provided.
-    ovrError_Timeout                  = -1003,   ///< The operation timed out.
-    ovrError_NotInitialized           = -1004,   ///< The system or component has not been initialized.
-    ovrError_InvalidParameter         = -1005,   ///< Invalid parameter provided. See error info or log for details.
-    ovrError_ServiceError             = -1006,   ///< Generic service error. See error info or log for details.
-    ovrError_NoHmd                    = -1007,   ///< The given HMD doesn't exist.
+    ovrError_MemoryAllocationFailure    = -1000,   ///< Failure to allocate memory.
+    ovrError_SocketCreationFailure      = -1001,   ///< Failure to create a socket.
+    ovrError_InvalidHmd                 = -1002,   ///< Invalid HMD parameter provided.
+    ovrError_Timeout                    = -1003,   ///< The operation timed out.
+    ovrError_NotInitialized             = -1004,   ///< The system or component has not been initialized.
+    ovrError_InvalidParameter           = -1005,   ///< Invalid parameter provided. See error info or log for details.
+    ovrError_ServiceError               = -1006,   ///< Generic service error. See error info or log for details.
+    ovrError_NoHmd                      = -1007,   ///< The given HMD doesn't exist.
 
     /* Audio error range, reserved for Audio errors. */
-    ovrError_AudioReservedBegin       = -2000,   ///< First Audio error.
-    ovrError_AudioReservedEnd         = -2999,   ///< Last Audio error.
+    ovrError_AudioReservedBegin         = -2000,   ///< First Audio error.
+    ovrError_AudioReservedEnd           = -2999,   ///< Last Audio error.
 
     /* Initialization errors. */
-    ovrError_Initialize               = -3000,   ///< Generic initialization error.
-    ovrError_LibLoad                  = -3001,   ///< Couldn't load LibOVRRT.
-    ovrError_LibVersion               = -3002,   ///< LibOVRRT version incompatibility.
-    ovrError_ServiceConnection        = -3003,   ///< Couldn't connect to the OVR Service.
-    ovrError_ServiceVersion           = -3004,   ///< OVR Service version incompatibility.
-    ovrError_IncompatibleOS           = -3005,   ///< The operating system version is incompatible.
-    ovrError_DisplayInit              = -3006,   ///< Unable to initialize the HMD display.
-    ovrError_ServerStart              = -3007,   ///< Unable to start the server. Is it already running?
-    ovrError_Reinitialization         = -3008,   ///< Attempting to re-initialize with a different version.
-    ovrError_MismatchedAdapters       = -3009,   ///< Chosen rendering adapters between client and service do not match
+    ovrError_Initialize                 = -3000,   ///< Generic initialization error.
+    ovrError_LibLoad                    = -3001,   ///< Couldn't load LibOVRRT.
+    ovrError_LibVersion                 = -3002,   ///< LibOVRRT version incompatibility.
+    ovrError_ServiceConnection          = -3003,   ///< Couldn't connect to the OVR Service.
+    ovrError_ServiceVersion             = -3004,   ///< OVR Service version incompatibility.
+    ovrError_IncompatibleOS             = -3005,   ///< The operating system version is incompatible.
+    ovrError_DisplayInit                = -3006,   ///< Unable to initialize the HMD display.
+    ovrError_ServerStart                = -3007,   ///< Unable to start the server. Is it already running?
+    ovrError_Reinitialization           = -3008,   ///< Attempting to re-initialize with a different version.
+    ovrError_MismatchedAdapters         = -3009,   ///< Chosen rendering adapters between client and service do not match
+    ovrError_LeakingResources           = -3010,   ///< Calling application has leaked resources
+    ovrError_ClientVersion              = -3011,   ///< Client version too old to connect to service
 
     /*Hardware Errors*/
-    ovrError_InvalidBundleAdjustment  = -4000,   ///< Headset has no bundle adjustment data.
-    ovrError_USBBandwidth             = -4001,   ///< The USB hub cannot handle the camera frame bandwidth.
-    ovrError_USBEnumeratedSpeed       = -4002,   ///< The USB camera is not enumerating at the correct device speed.
-    ovrError_ImageSensorCommError     = -4003,   ///< Unable to communicate with the image sensor.
-    ovrError_GeneralTrackerFailure    = -4004,   ///< We use this to report various tracker issues that don't fit in an easily classifiable bucket.
-    ovrError_ExcessiveFrameTruncation = -4005,  ///< A more than acceptable number of frames are coming back truncated.
-    ovrError_ExcessiveFrameSkipping   = -4006,  ///< A more than acceptable number of frames have been skipped.
-    ovrError_SyncDisconnected         = -4007,  ///< The tracker is not receiving the sync signal (cable disconnected?)
-    ovrError_HMDFirmwareMismatch      = -4100,   ///< The HMD Firmware is out of date and is unacceptable.
-    ovrError_TrackerFirmwareMismatch  = -4101,   ///< The Tracker Firmware is out of date and is unacceptable.
+    ovrError_InvalidBundleAdjustment    = -4000,   ///< Headset has no bundle adjustment data.
+    ovrError_USBBandwidth               = -4001,   ///< The USB hub cannot handle the camera frame bandwidth.
+    ovrError_USBEnumeratedSpeed         = -4002,   ///< The USB camera is not enumerating at the correct device speed.
+    ovrError_ImageSensorCommError       = -4003,   ///< Unable to communicate with the image sensor.
+    ovrError_GeneralTrackerFailure      = -4004,   ///< We use this to report various tracker issues that don't fit in an easily classifiable bucket.
+    ovrError_ExcessiveFrameTruncation   = -4005,  ///< A more than acceptable number of frames are coming back truncated.
+    ovrError_ExcessiveFrameSkipping     = -4006,  ///< A more than acceptable number of frames have been skipped.
+    ovrError_SyncDisconnected           = -4007,  ///< The tracker is not receiving the sync signal (cable disconnected?)
+    ovrError_TrackerMemoryReadFailure   = -4008,  ///< Failed to read memory from the tracker
+    ovrError_TrackerMemoryWriteFailure  = -4009,  ///< Failed to write memory from the tracker
+    ovrError_TrackerFrameTimeout        = -4010,  ///< Timed out waiting for a camera frame
+    ovrError_TrackerTruncatedFrame      = -4011,  ///< Truncated frame returned from tracker
+
+    ovrError_HMDFirmwareMismatch        = -4100,   ///< The HMD Firmware is out of date and is unacceptable.
+    ovrError_TrackerFirmwareMismatch    = -4101,   ///< The Tracker Firmware is out of date and is unacceptable.
+    ovrError_BootloaderDeviceDetected   = -4102,   ///< A bootloader HMD is detected by the service
+    ovrError_TrackerCalibrationError    = -4103,   ///< The tracker calibration is missing or incorrect
+    ovrError_ControllerFirmwareMismatch = -4104, ///< The controller firmware is out of date and is unacceptable
 
     /*Synchronization Errors*/
-    ovrError_Incomplete               = -5000,   ///<Requested async work not yet complete.
-    ovrError_Abandoned                = -5001,   ///<Requested async work was abandoned and result is incomplete.
+    ovrError_Incomplete                 = -5000,   ///<Requested async work not yet complete.
+    ovrError_Abandoned                  = -5001,   ///<Requested async work was abandoned and result is incomplete.
+
+    /*Rendering Errors*/
+    ovrError_DisplayLost                = -6000,   ///<In the event of a system-wide graphics reset or cable unplug this is returned to the app
+
 } ovrErrorType;
 
 

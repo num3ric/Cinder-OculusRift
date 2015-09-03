@@ -21,8 +21,8 @@ limitations under the License.
 *************************************************************************************/
 
 
-#include <OVR_CAPI_Util.h>
-#include "OVR_StereoProjection.h"
+#include <Extras/OVR_CAPI_Util.h>
+#include <Extras/OVR_StereoProjection.h>
 
 #if defined(_MSC_VER)
     #include <emmintrin.h>
@@ -151,13 +151,13 @@ void ovr_CalcEyePoses(ovrPosef headPose,
 }
 
 
-void ovrHmd_GetEyePoses(ovrHmd hmd, unsigned int frameIndex,
+void ovr_GetEyePoses(ovrHmd hmd, unsigned int frameIndex,
                         const ovrVector3f hmdToEyeViewOffset[2],
                         ovrPosef outEyePoses[2],
                         ovrTrackingState* outHmdTrackingState)
 {
-    ovrFrameTiming   ftiming = ovrHmd_GetFrameTiming(hmd, frameIndex);
-    ovrTrackingState hmdState = ovrHmd_GetTrackingState(hmd, ftiming.DisplayMidpointSeconds);
+    ovrFrameTiming   ftiming = ovr_GetFrameTiming(hmd, frameIndex);
+    ovrTrackingState hmdState = ovr_GetTrackingState(hmd, ftiming.DisplayMidpointSeconds);
     ovr_CalcEyePoses(hmdState.HeadPose.ThePose, hmdToEyeViewOffset, outEyePoses);
     if ( outHmdTrackingState != nullptr )
     {
@@ -165,32 +165,6 @@ void ovrHmd_GetEyePoses(ovrHmd hmd, unsigned int frameIndex,
     }
 }
 
-
-
-
-double ovr_WaitTillTime(double absTime)
-{
-    double       initialTime = ovr_GetTimeInSeconds();
-    double       newTime     = initialTime;
-    
-    while(newTime < absTime)
-    {
-        for (int j = 0; j < 5; j++)
-        {
-            #if defined(__x86_64__) || defined(_M_AMD64) || defined(__i386__) ||  defined(_M_IX86) // Intel architecture...
-                #if defined(__GNUC__) || defined(__clang__)
-                    asm volatile("pause" ::: "memory");
-                #elif defined(_MSC_VER)
-                    _mm_pause();
-                #endif
-            #endif
-        }
-
-        newTime = ovr_GetTimeInSeconds();
-    }
-
-    return (newTime - initialTime);
-}
 
 
 

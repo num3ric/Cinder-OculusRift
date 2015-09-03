@@ -41,9 +41,9 @@ namespace OVR {
 // retrieve StereoEyeParams.
 enum StereoEye
 {
-    StereoEye_Center,
     StereoEye_Left,
-    StereoEye_Right    
+    StereoEye_Right,
+    StereoEye_Center
 };
 
 

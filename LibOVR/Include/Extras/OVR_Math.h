@@ -480,7 +480,7 @@ public:
     Vector2 Normalized() const                   
     { 
         T s = Length();
-        if (s != 0)
+        if (s != T(0))
             s = T(1) / s;
         return *this * s; 
     }
@@ -1436,7 +1436,7 @@ public:
     // If f is 1, then full value is given to *this, not "other" like other Lerp() functions
     Quat Nlerp(const Quat& other, T a)
     {
-        T sign = (Dot(other) >= 0) ? 1 : -1;
+        T sign = (Dot(other) >= 0) ? (T)1 : (T)-1;
         return (*this * sign * a + other * (1-a)).Normalized();
     }
     

@@ -24,7 +24,7 @@ limitations under the License.
 
 *************************************************************************************/
 
-#include "OVR_StereoProjection.h"
+#include <Extras/OVR_StereoProjection.h>
 
 
 namespace OVR {
@@ -142,13 +142,13 @@ Matrix4f CreateOrthoSubProjection ( bool /*rightHanded*/, StereoEye eyeType,
     float orthoHorizontalOffset = interpupillaryDistance * 0.5f / distanceFromCamera;
     switch ( eyeType )
     {
-    case StereoEye_Center:
-        orthoHorizontalOffset = 0.0f;
-        break;
     case StereoEye_Left:
         break;
     case StereoEye_Right:
         orthoHorizontalOffset = -orthoHorizontalOffset;
+        break;
+    case StereoEye_Center:
+        orthoHorizontalOffset = 0.0f;
         break;
     default: 
         break;

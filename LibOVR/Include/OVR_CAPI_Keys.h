@@ -23,7 +23,7 @@
 #define OVR_KEY_EYE_CUP                     "EyeCup"              // char[16] "A", "B", or "C"
 #define OVR_KEY_CUSTOM_EYE_RENDER           "CustomEyeRender"     // bool
 //Legacy profile value tied to the device and serial
-#define OVR_KEY_CAMERA_POSITION_1				"CenteredFromWorld"   // double[7] ovrPosef quat rotation x, y, z, w, translation x, y, z
+#define OVR_KEY_CAMERA_POSITION_1           "CenteredFromWorld"   // double[7] ovrPosef quat rotation x, y, z, w, translation x, y, z
 //New value that now only ties to the device so that swapping headsets retains the offset from the tracker
 #define OVR_KEY_CAMERA_POSITION_2			"CenteredFromWorld2"   // double[7] ovrPosef quat rotation x, y, z, w, translation x, y, z
 #define OVR_KEY_CAMERA_POSITION OVR_KEY_CAMERA_POSITION_2 
@@ -42,5 +42,13 @@
 #define OVR_DEFAULT_NECK_TO_EYE_VERTICAL    0.075f
 #define OVR_DEFAULT_EYE_RELIEF_DIAL         3
 #define OVR_DEFAULT_CAMERA_POSITION			{0,0,0,1,0,0,0}
+
+#define OVR_PERF_HUD_MODE                   "PerfHudMode"   // allowed values are defined in enum ovrPerfHudMode
+
+#define OVR_DEBUG_HUD_STEREO_MODE               "DebugHudStereoMode"                // allowed values are defined in enum ovrDebugHudStereoMode
+#define OVR_DEBUG_HUD_STEREO_GUIDE_SIZE         "DebugHudStereoGuideSize2f"         // float[2]
+#define OVR_DEBUG_HUD_STEREO_GUIDE_POSITION     "DebugHudStereoGuidePosition3f"     // float[3]
+#define OVR_DEBUG_HUD_STEREO_GUIDE_YAWPITCHROLL "DebugHudStereoGuideYawPitchRoll3f" // float[3]
+#define OVR_DEBUG_HUD_STEREO_GUIDE_COLOR        "DebugHudStereoGuideColor4f"        // float[4]
 
 #endif // OVR_CAPI_Keys_h

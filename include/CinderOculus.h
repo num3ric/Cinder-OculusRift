@@ -43,7 +43,7 @@
 #include "cinder/gl/gl.h"
 #include "cinder/Camera.h"
 
-#include "OVR_CAPI_0_6_0.h"
+#include "OVR_CAPI.h"
 #include "OVR_CAPI_GL.h"
 
 #include <map>
@@ -190,7 +190,7 @@ struct TextureBuffer
 		CI_ASSERT( hmd ); // No HMD? A little odd.
 		CI_ASSERT( sampleCount == 1 ); // ovrHmd_CreateSwapTextureSetD3D11 doesn't support MSAA.
 
-		auto result = ovrHmd_CreateSwapTextureSetGL( hmd, GL_RGBA, size.x, size.y, &TextureSet );
+		auto result = ovr_CreateSwapTextureSetGL( hmd, GL_RGBA, size.x, size.y, &TextureSet );
 		CI_ASSERT( result == ovrSuccess );
 
 		for( int i = 0; i < TextureSet->TextureCount; ++i ) {
@@ -322,7 +322,7 @@ public:
 	bool	isRenderUpdating() const { return mIsRenderUpdating; }
 
 	//! Returns the native resolution of the HMD.
-	glm::ivec2	getNativeHmdResolution() const { return fromOvr( mHmd->Resolution ); }
+	glm::ivec2	getNativeHmdResolution() const { return fromOvr( mHmdDesc.Resolution ); }
 	//! Returns the size of the render target fbo (used by both eyes).
 	glm::ivec2	getFboSize() const { return mRenderBuffer->getSize(); }
 
@@ -388,6 +388,7 @@ private:
 
 	// Oculus Rift SDK
 	ovrHmd				mHmd;
+	ovrHmdDesc			mHmdDesc;
 	ovrEyeType			mEye;
 	ovrEyeRenderDesc	mEyeRenderDesc[ovrEye_Count];
 	ovrPosef			mEyeRenderPose[ovrEye_Count];
