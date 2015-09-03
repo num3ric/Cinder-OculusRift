@@ -297,9 +297,9 @@ public:
 	 * render helps minimize aliasing and increases detail. */
 	void	setScreenPercentage( float sp );
 
-	//! Returns true if the render is also mirrored on screen (direct mode).
+	//! Returns true if the render is also mirrored on screen.
 	bool	isMirrored() const;
-	//! Enable mirroring to screen (direct mode).
+	//! Enable mirroring to screen.
 	void	enableMirrored( bool enabled );
 
 	//! Returns true if monoscopic (no offset between eyes).
@@ -336,8 +336,6 @@ public:
 	std::pair<glm::ivec2, glm::ivec2> getEyeViewport() const { return fromOvr( mBaseLayer.Viewport[mEye] ); }
 
 	bool hasWindow( const ci::app::WindowRef &window ) const { return mWindow == window; }
-//	bool isCaptured() const;
-	bool isDesktopExtended() const;
 private:
 
 	class EyeCamera : public ci::CameraPersp 
@@ -379,7 +377,6 @@ private:
 	float				mScreenPercentage;
 	unsigned int		mHmdCaps, mTrackingCaps;
 	bool				mHmdSettingsChanged;
-	bool				mIsExtended;
 	bool				mIsMirrrored;
 	bool				mIsMonoscopic;
 	bool				mUsePositionalTracking;

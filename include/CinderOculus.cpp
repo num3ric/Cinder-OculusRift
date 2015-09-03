@@ -92,7 +92,6 @@ OculusRift::OculusRift()
 , mHmdCaps()
 , mTrackingCaps( kDefaulTrackingCaps )
 , mHmdSettingsChanged( true )
-, mIsExtended( false )
 , mIsMirrrored( true )
 , mIsMonoscopic( false )
 , mUsePositionalTracking( true )
@@ -340,11 +339,6 @@ void OculusRift::updateEyeOffset()
 		mEyeViewOffset[0] = mEyeRenderDesc[0].HmdToEyeViewOffset;
 		mEyeViewOffset[1] = mEyeRenderDesc[1].HmdToEyeViewOffset;
 	}
-}
-
-bool OculusRift::isDesktopExtended() const
-{
-	return mIsExtended;
 }
 
 void OculusRift::recenterPose()
