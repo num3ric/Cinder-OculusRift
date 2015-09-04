@@ -181,7 +181,7 @@ bool OculusRift::initialize( const ci::app::WindowRef& window )
 
 void OculusRift::initializeMirrorTexture( const glm::ivec2& size )
 {
- 	OVR_VERIFY( ovr_CreateMirrorTextureGL( mHmd, GL_RGBA, size.x, size.y, (ovrTexture**)&mMirrorTexture ) );
+	OVR_VERIFY( ovr_CreateMirrorTextureGL( mHmd, GL_SRGB8_ALPHA8, size.x, size.y, (ovrTexture**)&mMirrorTexture ) );
 
 	glGenFramebuffers( 1, &mMirrorFBO );
 	glBindFramebuffer( GL_READ_FRAMEBUFFER, mMirrorFBO );

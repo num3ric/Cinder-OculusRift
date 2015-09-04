@@ -190,7 +190,7 @@ struct TextureBuffer
 		CI_ASSERT( hmd ); // No HMD? A little odd.
 		CI_ASSERT( sampleCount == 1 ); // ovrHmd_CreateSwapTextureSetD3D11 doesn't support MSAA.
 
-		auto result = ovr_CreateSwapTextureSetGL( hmd, GL_RGBA, size.x, size.y, &TextureSet );
+		auto result = ovr_CreateSwapTextureSetGL( hmd, GL_SRGB8_ALPHA8, size.x, size.y, &TextureSet );
 		CI_ASSERT( result == ovrSuccess );
 
 		for( int i = 0; i < TextureSet->TextureCount; ++i ) {
