@@ -96,7 +96,7 @@ OculusRift::OculusRift( const Params& params )
 , mHmd( nullptr )
 , mMirrorFBO( 0 )
 , mMirrorTexture( nullptr )
-, mIsRenderUpdating( true )
+, mSkipFrame( false )
 {
 	mHostCamera.setEyePoint( vec3( 0 ) );
 	mHostCamera.setViewDirection( vec3( 0, 0, -1 ) );
@@ -240,7 +240,7 @@ void OculusRift::finishDrawFn( Renderer *renderer )
 	ovrLayerHeader* layers = &mBaseLayer.Header;
 	auto result = ovr_SubmitFrame( mHmd, 0, &viewScaleDesc, &layers, 1 );
 	
-	mIsRenderUpdating = ( result == ovrSuccess );
+	mSkipFrame = ! (result == ovrSuccess);
 
 	if( isMirrored() ) {
 		// Blit mirror texture to back buffer
@@ -365,13 +365,13 @@ void OculusRift::enableMirrored( bool enabled )
 	}
 }
 
-ScopedBind::ScopedBind( const OculusRiftRef& rift )
+ScopedRiftBuffer::ScopedRiftBuffer( const OculusRiftRef& rift )
 : mRift( rift.get() )
 {
 	mRift->bind();
 }
 
-ScopedBind::~ScopedBind()
+ScopedRiftBuffer::~ScopedRiftBuffer()
 {
 	mRift->unbind();
 }

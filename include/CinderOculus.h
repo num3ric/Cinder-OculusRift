@@ -335,7 +335,10 @@ public:
 	//! Enabling the use of positional tracking translations.
 	void	enablePositionalTracking( bool enabled ) { mUsePositionalTracking = enabled; }
 
-	bool	isRenderUpdating() const { return mIsRenderUpdating; }
+	/*! OPTIONAL: ovrSuccess_NotVisible is returned if the frame wasn't actually displayed, which can happen when VR
+	application loses focus. Our sample code handles this case by updating the isFrameSkipped flag.
+	While frames are not visible, rendering is paused to eliminate unnecessary GPU load. */
+	bool	isFrameSkipped() const { return mSkipFrame; }
 
 	//! Returns the native resolution of the HMD.
 	glm::ivec2	getNativeHmdResolution() const { return fromOvr( mHmdDesc.Resolution ); }
@@ -392,7 +395,7 @@ private:
 	bool				mIsMonoscopic;
 	bool				mUsePositionalTracking;
 
-	bool				mIsRenderUpdating;
+	bool				mSkipFrame;
 
 	// Oculus Rift SDK
 	ovrHmd				mHmd;
@@ -410,10 +413,10 @@ private:
 	GLuint							mMirrorFBO;
 };
 
-struct ScopedBind
+struct ScopedRiftBuffer
 {
-	ScopedBind( const OculusRiftRef& rift );
-	~ScopedBind();
+	ScopedRiftBuffer( const OculusRiftRef& rift );
+	~ScopedRiftBuffer();
 private:
 	OculusRift* mRift;
 };

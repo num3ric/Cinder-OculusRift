@@ -12,6 +12,7 @@
 using namespace ci;
 using namespace ci::app;
 using namespace std;
+using namespace hmd;
 
 class BasicSampleApp : public App {
 public:
@@ -28,7 +29,7 @@ private:
 
 	CameraPersp			mCamera;
 	CameraUi			mCameraUi;
-	hmd::OculusRiftRef	mRift;
+	OculusRiftRef		mRift;
 
 	gl::GlslProgRef	mShader;
 	gl::BatchRef	mTeapot;
@@ -65,9 +66,9 @@ BasicSampleApp::BasicSampleApp()
 	host.setEyePoint( mViewerPosition );
 	host.lookAt( vec3( 0 ) );
 	try {
-		mRift = hmd::OculusRift::create( hmd::OculusRift::Params().hostCamera( host ).screenPercentage( 1.4f ) );
+		mRift = OculusRift::create( OculusRift::Params().hostCamera( host ).screenPercentage( 1.4f ) );
 	}
-	catch( const hmd::RiftExeption& exc ) {
+	catch( const RiftExeption& exc ) {
 		CI_LOG_EXCEPTION( "Failed rift initialization.", exc );
 	}
 }
@@ -106,14 +107,11 @@ void BasicSampleApp::draw()
 {
 	gl::clear( Color( 0.02, 0.02, 0.1 ) );
 
-	/* OPTIONAL: ovrSuccess_NotVisible is returned if the frame wasn't actually displayed, which can happen when VR
-	application loses focus. Our sample code handles this case by updating the isRenderUpdating flag.
-	While frames are not visible, rendering is paused to eliminate unnecessary GPU load. */
-	if( mRift && ! mRift->isRenderUpdating() )
-		return;
-
 	if( mRift ) {
-		hmd::ScopedBind bind{ mRift };
+		if( mRift->isFrameSkipped() )
+			return;
+
+		ScopedRiftBuffer bind{ mRift };
 
 		for( auto eye : mRift->getEyes() ) {
 			mRift->enableEye( eye );
@@ -172,9 +170,9 @@ void BasicSampleApp::keyDown( KeyEvent event )
 void prepareSettings( App::Settings *settings )
 {
 	try{
-		hmd::RiftManager::initialize();
+		RiftManager::initialize();
 	}
-	catch( const hmd::RiftExeption& exc ) {
+	catch( const RiftExeption& exc ) {
 		CI_LOG_EXCEPTION( "Failed ovr initialization", exc );
 	}
 	settings->setTitle( "Oculus Rift Sample" );
