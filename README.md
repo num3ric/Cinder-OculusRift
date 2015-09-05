@@ -15,7 +15,7 @@ Samples
 
 Usage
 -----------------
-First, initialize the rift manager in prepareSettings. *You should also disable framerate and msaa 16.*
+First, initialize the rift manager in prepareSettings.
 
 ```
 using namespace hmd;
