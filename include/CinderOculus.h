@@ -42,6 +42,8 @@
 #include "cinder/app/Window.h"
 #include "cinder/gl/gl.h"
 #include "cinder/Camera.h"
+#include "cinder/Exception.h"
+#include "cinder/Noncopyable.h"
 
 #include "OVR_CAPI.h"
 #include "OVR_CAPI_GL.h"
@@ -250,18 +252,16 @@ private:
 	static std::once_flag				mOnceFlag;
 	static std::unique_ptr<RiftManager>	mInstance;
 
-	friend class OculusRift;
+	friend OculusRift;
 };
 
-class OculusRift 
+typedef std::shared_ptr<OculusRift> OculusRiftRef;
+
+class OculusRift : ci::Noncopyable
 {
 public:
-	explicit OculusRift();
+	static OculusRiftRef create();
 	~OculusRift();
-	
-	bool	initialize( const ci::app::WindowRef &window );
-	void	detachFromWindow();
-
 	//! Binds the final framebuffer used by the OVR runtime.
 	void	bind();
 	//! Unbinds the framebuffer.
@@ -335,8 +335,8 @@ public:
 	//! Returns the active eye viewport.
 	std::pair<glm::ivec2, glm::ivec2> getEyeViewport() const { return fromOvr( mBaseLayer.Viewport[mEye] ); }
 
-	bool hasWindow( const ci::app::WindowRef &window ) const { return mWindow == window; }
 private:
+	explicit OculusRift();
 
 	class EyeCamera : public ci::CameraPersp 
 	{
@@ -352,8 +352,6 @@ private:
 		friend class OculusRift;
 	};
 	
-	static bool	isValid( const ci::app::WindowRef& window );
-	
 	void	initializeFrameBuffer();
 	void	initializeMirrorTexture( const glm::ivec2& size );
 	
@@ -367,8 +365,6 @@ private:
 	mutable glm::mat4	mViewMatrix, mInverseViewMatrix;
 	mutable bool		mViewMatrixCached = false;
 	mutable bool		mInverseViewMatrixCached = false;
-
-	ci::app::WindowRef	mWindow;
 
 	EyeCamera			mEyeCamera;
 	ci::CameraPersp		mHostCamera;
@@ -401,10 +397,16 @@ private:
 
 struct ScopedBind
 {
-	ScopedBind( OculusRift& rift );
+	ScopedBind( const OculusRiftRef& rift );
 	~ScopedBind();
 private:
 	OculusRift* mRift;
+};
+
+class RiftExeption : public ci::Exception {
+public:
+	RiftExeption() { }
+	RiftExeption( const std::string &description ) : Exception( description ) { }
 };
 
 } // namespace hmd

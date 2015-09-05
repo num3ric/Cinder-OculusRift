@@ -49,18 +49,13 @@ using namespace hmd;
 std::unique_ptr<RiftManager> RiftManager::mInstance = nullptr;
 std::once_flag RiftManager::mOnceFlag;
 
-bool OVR_VERIFY( const ovrResult& result )
+void OVR_VERIFY( const ovrResult& result )
 {
-	if( OVR_SUCCESS( result ) ) {
-		return true;
-	}
-	else {
+	if( ! OVR_SUCCESS( result ) ) {
 		ovrErrorInfo errorInfo;
 		ovr_GetLastErrorInfo( &errorInfo );
-		CI_LOG_E( errorInfo.ErrorString );
-		CI_BREAKPOINT();
+		throw RiftExeption( errorInfo.ErrorString );
 	}
-	return false;
 }
 
 void RiftManager::initialize()
@@ -86,9 +81,14 @@ static const unsigned int kDefaulTrackingCaps =
 | ovrTrackingCap_MagYawCorrection
 | ovrTrackingCap_Position;
 
+
+OculusRiftRef OculusRift::create()
+{
+	return OculusRiftRef( new OculusRift );
+}
+
 OculusRift::OculusRift()
-: mWindow( nullptr )
-, mScreenPercentage( 1.0f )
+: mScreenPercentage( 1.0f )
 , mHmdCaps()
 , mTrackingCaps( kDefaulTrackingCaps )
 , mHmdSettingsChanged( true )
@@ -101,12 +101,12 @@ OculusRift::OculusRift()
 , mIsRenderUpdating( true )
 {
 	if( app::App::get()->isFrameRateEnabled() ) {
-		CI_LOG_W( "CiOculus: Disabled framerate for better performance." );
+		CI_LOG_I( "Disabled framerate for better performance." );
 		app::App::get()->disableFrameRate();
 	}
 
 	if( gl::isVerticalSyncEnabled() ) {
-		CI_LOG_W( "CiOculus: Disabled vertical sync: handled by compositor service." );
+		CI_LOG_I( "Disabled vertical sync: handled by compositor service." );
 		gl::enableVerticalSync( false );
 	}
 
@@ -117,12 +117,30 @@ OculusRift::OculusRift()
 	ovrGraphicsLuid luid;
 	OVR_VERIFY( ovr_Create( &mHmd, &luid ) );
 	mHmdDesc = ovr_GetHmdDesc( mHmd );
+
+
+	OVR_VERIFY( ovr_ConfigureTracking( mHmd, mTrackingCaps, 0 ) );
+	for( int i = 0; i < ovrEye_Count; ++i ) {
+		mEyeRenderDesc[i] = ovr_GetRenderDesc( mHmd, (ovrEyeType)i, mHmdDesc.DefaultEyeFov[i] );
+	}
+
+	initializeFrameBuffer();
+	initializeMirrorTexture( app::getWindowSize() );
+	updateEyeOffset();
+
+	// Override the window's startDraw() and finishDraw() methods, so we can inject our own code.
+	RendererGlRef rendererGl = std::dynamic_pointer_cast<RendererGl>( app::getWindow()->getRenderer() );
+	if( rendererGl ) {
+		rendererGl->setStartDrawFn( std::bind( &OculusRift::startDrawFn, this, std::placeholders::_1 ) );
+		rendererGl->setFinishDrawFn( std::bind( &OculusRift::finishDrawFn, this, std::placeholders::_1 ) );
+	}
+	else {
+		throw std::runtime_error( "CinderOculus can only be used in combination with RendererGl." );
+	}
 }
 
 OculusRift::~OculusRift()
 {
-	detachFromWindow();
-
 	if( mMirrorTexture ) {
 		glDeleteFramebuffers( 1, &mMirrorFBO );
 		ovr_DestroyMirrorTexture( mHmd, (ovrTexture*)mMirrorTexture );
@@ -134,49 +152,6 @@ OculusRift::~OculusRift()
 		ovr_Destroy( mHmd );
 	
 	mHmd = nullptr;
-}
-
-void OculusRift::detachFromWindow()
-{
-	if( isValid( mWindow ) ) {
-		RendererGlRef rendererGl = std::dynamic_pointer_cast<RendererGl>( mWindow->getRenderer() );
-		if( rendererGl ) {
-			rendererGl->setStartDrawFn( nullptr );
-			rendererGl->setFinishDrawFn( nullptr );
-		}
-		mWindow.reset();
-	}
-}
-
-bool OculusRift::initialize( const ci::app::WindowRef& window )
-{
-	if( ! mHmd || ! isValid( window ) )
-		return false;
-
-	OVR_VERIFY( ovr_ConfigureTracking( mHmd, mTrackingCaps, 0 ) );
-	for( int i = 0; i < ovrEye_Count; ++i ) {
-		mEyeRenderDesc[i] = ovr_GetRenderDesc( mHmd, (ovrEyeType)i, mHmdDesc.DefaultEyeFov[i] );
-	}
-
-	initializeFrameBuffer();
-	initializeMirrorTexture( window->getSize() );
-
-	updateEyeOffset();
-
-	// Override the window's startDraw() and finishDraw() methods, so we can inject our own code.
-	RendererGlRef rendererGl = std::dynamic_pointer_cast<RendererGl>( window->getRenderer() );
-	if( rendererGl ) {
-		rendererGl->setStartDrawFn( std::bind( &OculusRift::startDrawFn, this, std::placeholders::_1 ) );
-		rendererGl->setFinishDrawFn( std::bind( &OculusRift::finishDrawFn, this, std::placeholders::_1 ) );
-	}
-	else {
-		throw std::runtime_error( "CinderOculus can only be used in combination with RendererGl." );
-	}
-	// Connect to the window close event, so we can properly destroy our HMD.
-	window->getSignalClose().connect( std::bind( [&]( ovrHmd hmd ) { assert( hmd == mHmd ); detachFromWindow(); }, mHmd ) );
-	
-	mWindow = window;
-	return true;
 }
 
 void OculusRift::initializeMirrorTexture( const glm::ivec2& size )
@@ -205,14 +180,6 @@ void OculusRift::initializeFrameBuffer()
 		mRenderBuffer = std::unique_ptr<TextureBuffer>( new TextureBuffer( mHmd, size, 1, 1 ) );
 		mDepthBuffer = std::unique_ptr<DepthBuffer>( new DepthBuffer( size, 0 ) );
 
-		mBaseLayer.Header.Type = ovrLayerType_EyeFov;
-		mBaseLayer.Header.Flags = ovrLayerFlag_HighQuality | ovrLayerFlag_TextureOriginAtBottomLeft;
-		mBaseLayer.ColorTexture[0] = mRenderBuffer->TextureSet;
-		mBaseLayer.ColorTexture[1] = NULL;
-		mBaseLayer.Fov[0] = mEyeRenderDesc[0].Fov;
-		mBaseLayer.Fov[1] = mEyeRenderDesc[1].Fov;
-		mBaseLayer.Viewport[0] = { { 0, 0 }, { size.x / 2, size.y } };
-		mBaseLayer.Viewport[1] = { { ( size.x + 1 ) / 2, 0 }, { size.x / 2, size.y } };
 	//}
 }
 
@@ -223,8 +190,6 @@ void OculusRift::startDrawFn( Renderer *renderer )
 	ovrFrameTiming ftiming = ovr_GetFrameTiming( mHmd, 0 );
 	ovrTrackingState hmdState = ovr_GetTrackingState( mHmd, ftiming.DisplayMidpointSeconds );
 	ovr_CalcEyePoses( hmdState.HeadPose.ThePose, mEyeViewOffset, mEyeRenderPose );
-	mBaseLayer.RenderPose[0] = mEyeRenderPose[0];
-	mBaseLayer.RenderPose[1] = mEyeRenderPose[1];
 }
 
 void OculusRift::bind()
@@ -271,12 +236,24 @@ void OculusRift::finishDrawFn( Renderer *renderer )
 	// Set up positional data.
 	ovrViewScaleDesc viewScaleDesc;
 	viewScaleDesc.HmdSpaceToWorldScaleInMeters = 1.0f;
-	viewScaleDesc.HmdToEyeViewOffset[0] = mEyeViewOffset[0];
-	viewScaleDesc.HmdToEyeViewOffset[1] = mEyeViewOffset[1];
+
+	mBaseLayer.Header.Type = ovrLayerType_EyeFov;
+	mBaseLayer.Header.Flags = ovrLayerFlag_HighQuality | ovrLayerFlag_TextureOriginAtBottomLeft;
+	for( auto eye : getEyes() ) {
+		viewScaleDesc.HmdToEyeViewOffset[eye] = mEyeViewOffset[eye];
+		mBaseLayer.Fov[eye]			= mEyeRenderDesc[eye].Fov;
+		mBaseLayer.RenderPose[eye]	= mEyeRenderPose[eye];
+	}
+	mBaseLayer.ColorTexture[0] = mRenderBuffer->TextureSet;
+	mBaseLayer.ColorTexture[1] = NULL;
+	auto size = mRenderBuffer->getSize();
+	mBaseLayer.Viewport[0] = { { 0, 0 }, { size.x / 2, size.y } };
+	mBaseLayer.Viewport[1] = { { (size.x + 1) / 2, 0 }, { size.x / 2, size.y } };
+
 
 	ovrLayerHeader* layers = &mBaseLayer.Header;
 	auto result = ovr_SubmitFrame( mHmd, 0, &viewScaleDesc, &layers, 1 );
-	OVR_VERIFY( result );
+	
 	mIsRenderUpdating = ( result == ovrSuccess );
 
 	if( isMirrored() ) {
@@ -289,6 +266,7 @@ void OculusRift::finishDrawFn( Renderer *renderer )
 			0, 0, w, h,
 			GL_COLOR_BUFFER_BIT, GL_NEAREST );
 		glBindFramebuffer( GL_READ_FRAMEBUFFER, 0 );
+
 		renderer->swapBuffers();
 	}
 	// Do NOT advance TextureSet currentIndex - that has already been done above just before rendering.
@@ -297,7 +275,7 @@ void OculusRift::finishDrawFn( Renderer *renderer )
 
 std::list<ovrEyeType> OculusRift::getEyes() const
 {
-	if( mHmd && isValid( mWindow ) )
+	if( mHmd )
 		return { ovrEye_Left, ovrEye_Right };
 	
 	return {};
@@ -402,13 +380,8 @@ void OculusRift::enableMirrored( bool enabled )
 	}
 }
 
-bool OculusRift::isValid( const WindowRef& window )
-{
-	return window && window->isValid();
-}
-
-ScopedBind::ScopedBind( OculusRift& rift )
-: mRift( &rift )
+ScopedBind::ScopedBind( const OculusRiftRef& rift )
+: mRift( rift.get() )
 {
 	mRift->bind();
 }
