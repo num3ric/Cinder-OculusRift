@@ -50,7 +50,7 @@ public:
 	void keyDown( KeyEvent event ) override;
 	void keyUp( KeyEvent event ) override;
 
-	hmd::OculusRift	mRift;
+	hmd::OculusRiftRef	mRift;
 private:
 	
 	size_t				mPanoIndex = 0;
@@ -60,12 +60,11 @@ private:
 };
 
 SphericalStereoApp::SphericalStereoApp()
+	: mRift{ hmd::OculusRift::create() }
 {
-	if( mRift.initialize( getWindow() ) ) {
-		mRift.enableMonoscopic( true );
-		mRift.enablePositionalTracking( false );
-		mRift.setScreenPercentage( 1.25f );
-	}
+	mRift->enableMonoscopic( true );
+	mRift->enablePositionalTracking( false );
+	mRift->setScreenPercentage( 1.25f );
 
 	mStereoGlsl	= gl::GlslProg::create( loadAsset( "stereo.vert" ), loadAsset( "stereo.frag" ) );
 	mPanos.push_back( Pano{ getAssetPath( "arnold_LR.jpg" ) } );
@@ -86,9 +85,9 @@ void SphericalStereoApp::draw()
 	hmd::ScopedBind bind{ mRift };
 	gl::clear();
 
-	if( mRift.hasWindow( getWindow() ) ) {
-		for( auto eye : mRift.getEyes() ) {
-			mRift.enableEye( eye );
+	if( mRift ) {
+		for( auto eye : mRift->getEyes() ) {
+			mRift->enableEye( eye );
 			mStereoGlsl->uniform( "uTopDown", mPanos.at( mPanoIndex ).mTopBottom );
 			mStereoGlsl->uniform( "uLeftFirst", mPanos.at( mPanoIndex ).mLeftFirst );
 			mStereoGlsl->uniform( "uCurrentEye", static_cast<bool>( eye ) );
@@ -96,10 +95,10 @@ void SphericalStereoApp::draw()
 			mSphere->draw();
 
 			{
-				auto size = mRift.getFboSize();
+				auto size = mRift->getFboSize();
 				gl::ScopedMatrices push;
 				gl::setMatricesWindow( size.x / 2, size.y );
-				vec3 latencies = mRift.getLatencies();
+				vec3 latencies = mRift->getLatencies();
 				
 				stringstream ss;
 				ss << mPanos.at( mPanoIndex ).mName << std::endl;
@@ -132,16 +131,16 @@ void SphericalStereoApp::keyDown( KeyEvent event )
 		quit();
 		break;
 	case KeyEvent::KEY_r:
-		mRift.recenterPose();
+		mRift->recenterPose();
 		break;
 	case KeyEvent::KEY_m:
-		mRift.enableMirrored( ! mRift.isMirrored() );
+		mRift->enableMirrored( ! mRift->isMirrored() );
 		break;
 	case KeyEvent::KEY_s:
-		mRift.enableMonoscopic( ! mRift.isMonoscopic() );
+		mRift->enableMonoscopic( ! mRift->isMonoscopic() );
 		break;
 	case KeyEvent::KEY_p:
-		mRift.enablePositionalTracking( ! mRift.isPositionalTrackingEnabled() );
+		mRift->enablePositionalTracking( ! mRift->isPositionalTrackingEnabled() );
 		break;
 	}
 }
