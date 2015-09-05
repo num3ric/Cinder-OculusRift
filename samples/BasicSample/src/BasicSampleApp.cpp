@@ -65,12 +65,10 @@ BasicSampleApp::BasicSampleApp()
 	host.setEyePoint( mViewerPosition );
 	host.lookAt( vec3( 0 ) );
 	try {
-		mRift = hmd::OculusRift::create();
-		mRift->setHostCamera( host );
-		mRift->setScreenPercentage( 1.3f );
+		mRift = hmd::OculusRift::create( hmd::OculusRift::Params().hostCamera( host ).screenPercentage( 1.4f ) );
 	}
 	catch( const hmd::RiftExeption& exc ) {
-		CI_LOG_EXCEPTION( "Failed oculus initialization.", exc );
+		CI_LOG_EXCEPTION( "Failed rift initialization.", exc );
 	}
 }
 
@@ -106,13 +104,13 @@ void BasicSampleApp::drawScene()
 
 void BasicSampleApp::draw()
 {
+	gl::clear( Color( 0.02, 0.02, 0.1 ) );
+
 	/* OPTIONAL: ovrSuccess_NotVisible is returned if the frame wasn't actually displayed, which can happen when VR
 	application loses focus. Our sample code handles this case by updating the isRenderUpdating flag.
 	While frames are not visible, rendering is paused to eliminate unnecessary GPU load. */
 	if( mRift && ! mRift->isRenderUpdating() )
 		return;
-
-	gl::clear( Color( 0.02, 0.02, 0.1 ) );
 
 	if( mRift ) {
 		hmd::ScopedBind bind{ mRift };
@@ -124,13 +122,13 @@ void BasicSampleApp::draw()
 
 			drawScene();
 
-			// Draw positional tracking camera frustum
-			CameraPersp positional;
-			if( mRift->getPositionalTrackingCamera( &positional ) ) {
-				gl::setModelMatrix( mat4() );
-				gl::lineWidth( 1.0f );
-				gl::drawFrustum( positional );
-			}
+			//// Draw positional tracking camera frustum
+			//CameraPersp positional;
+			//if( mRift->getPositionalTrackingCamera( &positional ) ) {
+			//	gl::setModelMatrix( mat4() );
+			//	gl::lineWidth( 1.0f );
+			//	gl::drawFrustum( positional );
+			//}
 		}
 	}
 	else {
@@ -177,7 +175,7 @@ void prepareSettings( App::Settings *settings )
 		hmd::RiftManager::initialize();
 	}
 	catch( const hmd::RiftExeption& exc ) {
-		CI_LOG_EXCEPTION( "Failed to initialize ovr.", exc );
+		CI_LOG_EXCEPTION( "Failed ovr initialization", exc );
 	}
 	settings->setTitle( "Oculus Rift Sample" );
 	settings->setWindowSize( 1920/2, 1080/2 );

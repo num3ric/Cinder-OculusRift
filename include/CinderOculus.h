@@ -260,7 +260,23 @@ typedef std::shared_ptr<OculusRift> OculusRiftRef;
 class OculusRift : ci::Noncopyable
 {
 public:
-	static OculusRiftRef create();
+	struct Params {
+		Params& screenPercentage( float sp ) { mScreenPercentage = sp; return *this; }
+		Params& hostCamera( const ci::CameraPersp& host ) { mHostCam = host; return *this; }
+		Params& monoscopic( bool mono ) { mIsMonoscopic = mono; return *this; }
+		Params& mirrored( bool mirror ) { mIsMirrrored = mirror; return *this; }
+		Params& positional( bool tracked ) { mUsePositionalTracking = tracked; return *this; }
+	private:
+		ci::CameraPersp mHostCam;
+		float mScreenPercentage = 1.0f;
+		bool mIsMonoscopic = false;
+		bool mIsMirrrored = true;
+		bool mUsePositionalTracking = true;
+		friend OculusRift;
+	};
+
+
+	static OculusRiftRef create( const Params& params = Params{} );
 	~OculusRift();
 	//! Binds the final framebuffer used by the OVR runtime.
 	void	bind();
@@ -336,7 +352,7 @@ public:
 	std::pair<glm::ivec2, glm::ivec2> getEyeViewport() const { return fromOvr( mBaseLayer.Viewport[mEye] ); }
 
 private:
-	explicit OculusRift();
+	explicit OculusRift( const Params& params );
 
 	class EyeCamera : public ci::CameraPersp 
 	{
@@ -371,8 +387,7 @@ private:
 
 	float				mHeadScale;
 	float				mScreenPercentage;
-	unsigned int		mHmdCaps, mTrackingCaps;
-	bool				mHmdSettingsChanged;
+	unsigned int		mTrackingCaps;
 	bool				mIsMirrrored;
 	bool				mIsMonoscopic;
 	bool				mUsePositionalTracking;

@@ -82,39 +82,26 @@ static const unsigned int kDefaulTrackingCaps =
 | ovrTrackingCap_Position;
 
 
-OculusRiftRef OculusRift::create()
+OculusRiftRef OculusRift::create( const Params& params )
 {
-	return OculusRiftRef( new OculusRift );
+	return OculusRiftRef( new OculusRift{ params } );
 }
 
-OculusRift::OculusRift()
-: mScreenPercentage( 1.0f )
-, mHmdCaps()
+OculusRift::OculusRift( const Params& params )
+: mScreenPercentage( params.mScreenPercentage )
 , mTrackingCaps( kDefaulTrackingCaps )
-, mHmdSettingsChanged( true )
-, mIsMirrrored( true )
-, mIsMonoscopic( false )
-, mUsePositionalTracking( true )
+, mIsMirrrored( params.mIsMirrrored )
+, mIsMonoscopic( params.mIsMonoscopic )
+, mUsePositionalTracking( params.mUsePositionalTracking )
 , mHmd( nullptr )
 , mMirrorFBO( 0 )
 , mMirrorTexture( nullptr )
 , mIsRenderUpdating( true )
 {
-	if( app::App::get()->isFrameRateEnabled() ) {
-		CI_LOG_I( "Disabled framerate for better performance." );
-		app::App::get()->disableFrameRate();
-	}
-
-	if( gl::isVerticalSyncEnabled() ) {
-		CI_LOG_I( "Disabled vertical sync: handled by compositor service." );
-		gl::enableVerticalSync( false );
-	}
-
 	mHostCamera.setEyePoint( vec3( 0 ) );
 	mHostCamera.setViewDirection( vec3( 0, 0, -1 ) );
 	
-	// TODO: Make fail-safe
-	ovrGraphicsLuid luid;
+	ovrGraphicsLuid luid; //can't use in opengl
 	OVR_VERIFY( ovr_Create( &mHmd, &luid ) );
 	mHmdDesc = ovr_GetHmdDesc( mHmd );
 
@@ -136,6 +123,16 @@ OculusRift::OculusRift()
 	}
 	else {
 		throw std::runtime_error( "CinderOculus can only be used in combination with RendererGl." );
+	}
+
+	if( app::App::get()->isFrameRateEnabled() ) {
+		CI_LOG_I( "Disabled framerate for better performance." );
+		app::App::get()->disableFrameRate();
+	}
+
+	if( gl::isVerticalSyncEnabled() ) {
+		CI_LOG_I( "Disabled vertical sync: handled by compositor service." );
+		gl::enableVerticalSync( false );
 	}
 }
 
@@ -167,25 +164,14 @@ void OculusRift::initializeMirrorTexture( const glm::ivec2& size )
 
 void OculusRift::initializeFrameBuffer()
 {
-	// Determine the size and create the buffer.
-	ovrSizei left = ovr_GetFovTextureSize( mHmd, ovrEye_Left, mEyeRenderDesc[0].Fov, mScreenPercentage );
-	ovrSizei right = ovr_GetFovTextureSize( mHmd, ovrEye_Right, mEyeRenderDesc[1].Fov, mScreenPercentage );
-	ivec2 size;
-	size.x = left.w + right.w;
-	size.y = math<int>::max( left.h, right.h );
-	
-	// TODO: Support dynamic viewport/render resolution
-
-	//if( ! mRenderBuffer || mRenderBuffer->getSize() != size ) {
-		mRenderBuffer = std::unique_ptr<TextureBuffer>( new TextureBuffer( mHmd, size, 1, 1 ) );
-		mDepthBuffer = std::unique_ptr<DepthBuffer>( new DepthBuffer( size, 0 ) );
-
-	//}
+	auto size = mScreenPercentage * vec2( fromOvr( mHmdDesc.Resolution ) );
+	mRenderBuffer = std::unique_ptr<TextureBuffer>( new TextureBuffer( mHmd, size, 1, 1 ) );
+	mDepthBuffer = std::unique_ptr<DepthBuffer>( new DepthBuffer( size, 0 ) );
 }
 
 void OculusRift::startDrawFn( Renderer *renderer )
 {
-	renderer->makeCurrentContext();
+	//renderer->makeCurrentContext();
 
 	ovrFrameTiming ftiming = ovr_GetFrameTiming( mHmd, 0 );
 	ovrTrackingState hmdState = ovr_GetTrackingState( mHmd, ftiming.DisplayMidpointSeconds );
@@ -266,9 +252,8 @@ void OculusRift::finishDrawFn( Renderer *renderer )
 			0, 0, w, h,
 			GL_COLOR_BUFFER_BIT, GL_NEAREST );
 		glBindFramebuffer( GL_READ_FRAMEBUFFER, 0 );
-
-		renderer->swapBuffers();
 	}
+	renderer->swapBuffers();
 	// Do NOT advance TextureSet currentIndex - that has already been done above just before rendering.
 }
 
@@ -326,7 +311,7 @@ void OculusRift::recenterPose()
 
 bool OculusRift::getPositionalTrackingCamera( CameraPersp* positional ) const
 {
-	ovrTrackingState ts = ovr_GetTrackingState( mHmd, ovr_GetTimeInSeconds() );
+	ovrTrackingState ts = ovr_GetTrackingState( mHmd, 0.0f );
 	if( isTracked( ts ) ) {
 		float aspectRatio = abs( tan( 0.5f * mHmdDesc.CameraFrustumHFovInRadians ) / tan( 0.5f * mHmdDesc.CameraFrustumVFovInRadians ) );
 		positional->setPerspective(	toDegrees( mHmdDesc.CameraFrustumVFovInRadians ),
@@ -358,7 +343,7 @@ void OculusRift::setScreenPercentage( float sp )
 
 bool OculusRift::isTracked() const
 {
-	ovrTrackingState ts = ovr_GetTrackingState( mHmd, ovr_GetTimeInSeconds() );
+	ovrTrackingState ts = ovr_GetTrackingState( mHmd, 0.0f );
 	return isTracked( ts );
 }
 
