@@ -1,7 +1,7 @@
 Cinder-OculusRift
 ==================
 
-This is yet another Oculus Rift block for Cinder, and a collaboration between [Paul Houx](https://github.com/paulhoux) & myself. *Thanks Paul for all the initial work!* It currently uses version 0.4.4 of the Oculus SDK, and the latest glNext Cinder version. It has been tested with the DK2 only. Both Windows & Mac OS X are supported, although Windows (with direct-mode enabled) is still the prefered platform.
+This is yet another Oculus Rift block for Cinder, and a collaboration between [Paul Houx](https://github.com/paulhoux) & myself. *Thanks Paul for all the initial work!* It currently uses version 0.7 of the Oculus SDK, and the latest glNext Cinder version. Support for DK2 Windows.
 
 Samples
 -----------------
@@ -15,7 +15,7 @@ Samples
 
 Usage
 -----------------
-First, initialize the rift manager in prepareSettings. *Also make sure to disable both framerate and msaa 16.*
+First, initialize the rift manager in prepareSettings. *You should also disable framerate and msaa 16.*
 
 ```
 hmd::RiftManager::initialize();
@@ -23,9 +23,9 @@ hmd::RiftManager::initialize();
 
 Create an Oculus Rift instance, and attach it to a window (with vsync enabled preferably).
 ```
-hmd::OculusRift		mRift;
+hmd::OculusRiftRef	mRift;
 ...
-mRift.attachToWindow( app::getWindow() )
+mRift = hmd::OculusRift::create();
 ```
 
 The OculusRift class has two cameras: a convenience host camera controlling the overall head position & orientation, and an active eye camera which is updated by the SDK according to the tracked position & orientation. Their transformations are composed and can be queried via the `hmd::OculusRift` interface.
