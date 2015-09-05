@@ -18,14 +18,16 @@ Usage
 First, initialize the rift manager in prepareSettings. *You should also disable framerate and msaa 16.*
 
 ```
-hmd::RiftManager::initialize();
+using namespace hmd;
+
+RiftManager::initialize();
 ```
 
 Create an Oculus Rift instance, and attach it to a window (with vsync enabled preferably).
 ```
-hmd::OculusRiftRef	mRift;
+OculusRiftRef	mRift;
 ...
-mRift = hmd::OculusRift::create();
+mRift = OculusRift::create();
 ```
 
 The OculusRift class has two cameras: a convenience host camera controlling the overall head position & orientation, and an active eye camera which is updated by the SDK according to the tracked position & orientation. Their transformations are composed and can be queried via the `hmd::OculusRift` interface.
@@ -33,7 +35,7 @@ The OculusRift class has two cameras: a convenience host camera controlling the 
 
 In the draw() loop, call bind to render the scene to the rift's framebuffer. Iterate over each eye (enabling it) and draw your scene as follows:
 ```
-hmd::ScopedBind bind{ mRift };
+ScopedRiftBuffer bind{ mRift };
 ...
 for( auto eye : mRift.getEyes() ) {
 		mRift.enableEye( eye );

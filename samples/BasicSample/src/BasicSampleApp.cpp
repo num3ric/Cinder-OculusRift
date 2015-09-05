@@ -107,10 +107,7 @@ void BasicSampleApp::draw()
 {
 	gl::clear( Color( 0.02, 0.02, 0.1 ) );
 
-	if( mRift ) {
-		if( mRift->isFrameSkipped() )
-			return;
-
+	if( mRift && ! mRift->isFrameSkipped() ) {
 		ScopedRiftBuffer bind{ mRift };
 
 		for( auto eye : mRift->getEyes() ) {
@@ -120,13 +117,13 @@ void BasicSampleApp::draw()
 
 			drawScene();
 
-			//// Draw positional tracking camera frustum
-			//CameraPersp positional;
-			//if( mRift->getPositionalTrackingCamera( &positional ) ) {
-			//	gl::setModelMatrix( mat4() );
-			//	gl::lineWidth( 1.0f );
-			//	gl::drawFrustum( positional );
-			//}
+			// Draw positional tracking camera frustum
+			CameraPersp positional;
+			if( mRift->getPositionalTrackingCamera( &positional ) ) {
+				gl::setModelMatrix( mat4() );
+				gl::lineWidth( 1.0f );
+				gl::drawFrustum( positional );
+			}
 		}
 	}
 	else {
