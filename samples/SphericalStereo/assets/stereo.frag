@@ -8,7 +8,6 @@ uniform bool		uCurrentEye;
 in vec3		vModelNormal;
 out vec4 	fragColor;
 
-const float PI = 3.14159265359;
 const float kOneOverPi = 1.0 / 3.14159265;
 
 void main() {
