@@ -281,7 +281,7 @@ public:
 	//! Binds the final framebuffer used by the OVR runtime.
 	void	bind();
 	//! Unbinds the framebuffer.
-	void	unbind() const;
+	void	unbind();
 
 	//! Returns the convenience host camera (base viewpoint position and orientation).
 	const ci::CameraPersp&	getHostCamera() const { return mHostCamera; }
@@ -373,9 +373,8 @@ private:
 	
 	void	initializeFrameBuffer();
 	void	initializeMirrorTexture( const glm::ivec2& size );
-	
-	void	startDrawFn( ci::app::Renderer *renderer );
-	void	finishDrawFn( ci::app::Renderer *renderer );
+	void	calcEyePoses();
+	void	submitFrame();
 	
 	mutable glm::mat4	mModelMatrix;
 	mutable bool		mModelMatrixCached = false;

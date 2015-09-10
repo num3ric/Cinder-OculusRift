@@ -80,11 +80,34 @@ void BasicSampleApp::update()
 	float t = float( mTime ) * 0.4f;
 	mLightWorldPosition = vec4( math<float>::sin( t ), math<float>::sin( t * 4.0f ), math<float>::cos( t ), 1 );
 
+	// Move head location
 	if( mRift ) {
 		auto host = mRift->getHostCamera();
 		host.setEyePoint( mViewerPosition + vec3( 0.5f * sin( app::getElapsedSeconds() ), 0, 0 ) );
 		host.lookAt( vec3( 0 ) );
 		mRift->setHostCamera( host );
+	}
+
+	// Draw from update due to conflicting WM_PAINT signal emitted by ovr_submitFrame
+	gl::clear( Color( 0.02, 0.02, 0.1 ) );
+	if( mRift ) {
+		ScopedRiftBuffer bind{ mRift };
+
+		for( auto eye : mRift->getEyes() ) {
+			mRift->enableEye( eye );
+			mShader->uniform( "uLightViewPosition", mRift->getViewMatrix() * mLightWorldPosition );
+			mShader->uniform( "uSkyDirection", mRift->getViewMatrix() * vec4( 0, 1, 0, 0 ) );
+
+			drawScene();
+
+			// Draw positional tracking camera frustum
+			CameraPersp positional;
+			if( mRift->getPositionalTrackingCamera( &positional ) ) {
+				gl::setModelMatrix( mat4() );
+				gl::lineWidth( 1.0f );
+				gl::drawFrustum( positional );
+			}
+		}
 	}
 }
 
@@ -105,28 +128,7 @@ void BasicSampleApp::drawScene()
 
 void BasicSampleApp::draw()
 {
-	gl::clear( Color( 0.02, 0.02, 0.1 ) );
-
-	if( mRift && ! mRift->isFrameSkipped() ) {
-		ScopedRiftBuffer bind{ mRift };
-
-		for( auto eye : mRift->getEyes() ) {
-			mRift->enableEye( eye );
-			mShader->uniform( "uLightViewPosition", mRift->getViewMatrix() * mLightWorldPosition );
-			mShader->uniform( "uSkyDirection", mRift->getViewMatrix() * vec4( 0, 1, 0, 0 ) );
-
-			drawScene();
-
-			// Draw positional tracking camera frustum
-			CameraPersp positional;
-			if( mRift->getPositionalTrackingCamera( &positional ) ) {
-				gl::setModelMatrix( mat4() );
-				gl::lineWidth( 1.0f );
-				gl::drawFrustum( positional );
-			}
-		}
-	}
-	else {
+	if( ! mRift ) {
 		gl::viewport( getWindowSize() );
 		gl::setMatrices( mCamera );
 
