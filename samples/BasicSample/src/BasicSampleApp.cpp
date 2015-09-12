@@ -42,14 +42,7 @@ BasicSampleApp::BasicSampleApp()
 : mViewerPosition{ vec3( 0, 0, 1 ) }
 , mCameraUi( &mCamera, app::getWindow() )
 {
-	try {
-		mShader = gl::GlslProg::create( gl::GlslProg::Format().vertex( loadAsset( "phong.vert" ) ).fragment( loadAsset( "phong.frag" ) ) );
-	}
-	catch( const std::exception& e ) {
-		console() << e.what() << std::endl;
-		quit();
-	}
-	
+	mShader = gl::GlslProg::create( gl::GlslProg::Format().vertex( loadAsset( "phong.vert" ) ).fragment( loadAsset( "phong.frag" ) ) );
 	mTeapot = gl::Batch::create( geom::Teapot().subdivisions( 12 ), mShader );
 
 	// Setup camera for the debug (main) window.
@@ -57,16 +50,13 @@ BasicSampleApp::BasicSampleApp()
 	mCamera.lookAt( vec3( 0 ) );
 	mCamera.setFov( 45.0f );
 
-	//gl::enableVerticalSync( false );
+	gl::disableAlphaBlending();
 	gl::enableDepthRead();
 	gl::enableDepthWrite();
 	gl::color( Color::white() );
 
-	CameraPersp host;
-	host.setEyePoint( mViewerPosition );
-	host.lookAt( vec3( 0 ) );
 	try {
-		mRift = OculusRift::create( OculusRift::Params().hostCamera( host ).screenPercentage( 1.4f ) );
+		mRift = OculusRift::create( OculusRift::Params().screenPercentage( 1.4f ) );
 	}
 	catch( const RiftExeption& exc ) {
 		CI_LOG_EXCEPTION( "Failed rift initialization.", exc );
@@ -88,9 +78,9 @@ void BasicSampleApp::update()
 		mRift->setHostCamera( host );
 	}
 
-	// Draw from update due to conflicting WM_PAINT signal emitted by ovr_submitFrame
+	// Draw from update due to conflicting WM_PAINT signal emitted by ovr_submitFrame (0.7 SDK).
 	gl::clear( Color( 0.02, 0.02, 0.1 ) );
-	if( mRift ) {
+	if( mRift && ! mRift->isFrameSkipped() ) {
 		ScopedRiftBuffer bind{ mRift };
 
 		for( auto eye : mRift->getEyes() ) {

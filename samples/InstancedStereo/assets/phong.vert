@@ -11,12 +11,12 @@ out vec3 vNormal;
 out mat4 vEyeViewMatrix;
 out float gl_ClipDistance[1];
 
-vec4 eyeClipEdge[2] = vec4[2]( vec4(1,0,0,0), vec4(-1,0,0,0) );
-float eyeOffsetScale[2] = float[2]( 0.5, -0.5 );
+vec4 eyeClipEdge[2] = vec4[2]( vec4(-1,0,0,0), vec4(1,0,0,0) );
+float eyeOffsetScale[2] = float[2]( -0.5, 0.5 );
 
 void main( void )
 {
-	uint eyeIndex = gl_InstanceID & 1;
+	uint eyeIndex = gl_InstanceID;
 	vEyeViewMatrix = uWorldToEyeClipMatrices[ 3 * eyeIndex ];
 	mat4 eyeProjectionMatrix = uWorldToEyeClipMatrices[ 3 * eyeIndex + 1 ];
 	mat3 eyeNormalMatrix = mat3( uWorldToEyeClipMatrices[ 3 * eyeIndex + 2 ] );
