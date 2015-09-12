@@ -98,8 +98,13 @@ OculusRift::OculusRift( const Params& params )
 , mMirrorTexture( nullptr )
 , mSkipFrame( false )
 {
-	mHostCamera.setEyePoint( vec3( 0 ) );
-	mHostCamera.setViewDirection( vec3( 0, 0, -1 ) );
+	if( params.mHostCam.first ) {
+		mHostCamera = params.mHostCam.second;
+	}
+	else {
+		mHostCamera.setEyePoint( vec3( 0 ) );
+		mHostCamera.setViewDirection( vec3( 0, 0, -1 ) );
+	}
 	
 	ovrGraphicsLuid luid; //can't use in opengl
 	OVR_VERIFY( ovr_Create( &mHmd, &luid ) );
