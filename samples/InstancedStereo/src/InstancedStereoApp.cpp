@@ -21,7 +21,7 @@ private:
 	void drawPositionalTrackingCamera() const;
 	double			mTime;
 
-	hmd::OculusRift	mRift;
+	hmd::OculusRiftRef	mRift;
 
 	gl::GlslProgRef	mShader;
 	gl::BatchRef	mTeapot;
@@ -32,16 +32,11 @@ private:
 InstancedStereoApp::InstancedStereoApp()
 : mLightWorldPosition( vec4( 1, 1, 1, 1 ) )
 {
-	if( mRift.initialize( getWindow() ) ) {
+	CameraPersp host;
+	host.setEyePoint( vec3( 0, 0, 1 ) );
+	host.lookAt( vec3( 0 ) );
+	mRift = hmd::OculusRift::create( hmd::OculusRift::Params().hostCamera( host ).screenPercentage( 1.25f ) );
 
-		CameraPersp host;
-		host.setEyePoint( vec3( 0, 0, 1 ) );
-		host.lookAt( vec3( 0 ) );
-		mRift.setHostCamera( host );
-		mRift.setScreenPercentage( 1.25f );
-	}
-
-	// Basic phong shader
 	try {
 		mShader = gl::GlslProg::create( gl::GlslProg::Format().vertex( loadAsset( "phong.vert" ) ).fragment( loadAsset( "phong.frag" ) ) );
 	}
@@ -52,6 +47,7 @@ InstancedStereoApp::InstancedStereoApp()
 	mTeapot = gl::Batch::create( geom::Teapot().subdivisions( 12 ), mShader );
 
 	gl::enableVerticalSync( false );
+	gl::disableAlphaBlending();
 	gl::enableDepthRead();
 	gl::enableDepthWrite();
 	gl::enable( GL_CLIP_DISTANCE0, true );
@@ -60,32 +56,27 @@ InstancedStereoApp::InstancedStereoApp()
 void InstancedStereoApp::update()
 {
 	mTime = getElapsedSeconds();
-}
-
-void InstancedStereoApp::draw()
-{
-	hmd::ScopedBind bind{ mRift };
 	gl::clear();
+
+	hmd::ScopedRiftBuffer bind{ mRift };
 	std::array<mat4, 6> worldToEyeClipMatrices;
 
-	auto sceneDraw = [&]() {
+	// Calc clip space conversion matrices for both eyes
+	for( auto eye : mRift->getEyes() ) {
+		gl::ScopedMatrices push;
+		mRift->enableEye( eye );
+		auto idx = 3 * static_cast<size_t>(eye);
+		worldToEyeClipMatrices.at( idx ) = mRift->getViewMatrix() * mRift->getModelMatrix();
+		worldToEyeClipMatrices.at( idx + 1 ) = mRift->getProjectionMatrix();
+		
+		// non-instanced scene
 		gl::lineWidth( 3.0f );
 		gl::drawCoordinateFrame( 2 );
 		gl::drawSphere( vec3( mLightWorldPosition ), 0.05f, 36 );
-	};
-
-	// Calc clip space conversion matrices for both eyes
-	for( auto eye : mRift.getEyes() ) {
-		gl::ScopedMatrices push;
-		mRift.enableEye( eye );
-		auto idx = 3 * static_cast<size_t>( eye );
-		worldToEyeClipMatrices.at( idx ) = mRift.getViewMatrix() * mRift.getModelMatrix();
-		worldToEyeClipMatrices.at( idx + 1 ) = mRift.getProjectionMatrix();
-		sceneDraw();
 	}
 
 	{
-		gl::ScopedViewport port{ vec2( 0 ), mRift.getFboSize() };
+		gl::ScopedViewport port{ vec2( 0 ), mRift->getFboSize() };
 		gl::ScopedModelMatrix push;
 		gl::rotate( (float)mTime, vec3( -0.3f, -1.0f, 0.2f ) );
 		gl::scale( vec3( 0.5f ) );
@@ -99,6 +90,11 @@ void InstancedStereoApp::draw()
 	}
 }
 
+void InstancedStereoApp::draw()
+{
+
+}
+
 void InstancedStereoApp::keyDown( KeyEvent event )
 {
 	hideCursor();
@@ -107,16 +103,16 @@ void InstancedStereoApp::keyDown( KeyEvent event )
 		quit();
 		break;
 	case KeyEvent::KEY_r:
-		mRift.recenterPose();
+		mRift->recenterPose();
 		break;
 	case KeyEvent::KEY_m:
-		mRift.enableMirrored( ! mRift.isMirrored() );
+		mRift->enableMirrored( ! mRift->isMirrored() );
 		break;
 	case KeyEvent::KEY_s:
-		mRift.enableMonoscopic( ! mRift.isMonoscopic() );
+		mRift->enableMonoscopic( ! mRift->isMonoscopic() );
 		break;
 	case KeyEvent::KEY_t:
-		mRift.enablePositionalTracking( ! mRift.isTracked() );
+		mRift->enablePositionalTracking( ! mRift->isTracked() );
 		break;
 	}
 }

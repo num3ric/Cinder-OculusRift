@@ -261,14 +261,15 @@ class OculusRift : ci::Noncopyable
 {
 public:
 	struct Params {
+		Params() : mHostCam{ false, ci::CameraPersp{} } { }
 		Params& screenPercentage( float sp ) { mScreenPercentage = sp; return *this; }
-		Params& hostCamera( const ci::CameraPersp& host ) { mHostCam = host; return *this; }
+		Params& hostCamera( const ci::CameraPersp& host ) { mHostCam = { true, host }; return *this; }
 		Params& monoscopic( bool mono ) { mIsMonoscopic = mono; return *this; }
 		Params& mirrored( bool mirror ) { mIsMirrrored = mirror; return *this; }
 		Params& positional( bool tracked ) { mUsePositionalTracking = tracked; return *this; }
 	private:
-		ci::CameraPersp mHostCam;
-		float mScreenPercentage = 1.0f;
+		std::pair<bool, ci::CameraPersp> mHostCam;
+		float mScreenPercentage = 1.3f;
 		bool mIsMonoscopic = false;
 		bool mIsMirrrored = true;
 		bool mUsePositionalTracking = true;
@@ -281,7 +282,7 @@ public:
 	//! Binds the final framebuffer used by the OVR runtime.
 	void	bind();
 	//! Unbinds the framebuffer.
-	void	unbind() const;
+	void	unbind();
 
 	//! Returns the convenience host camera (base viewpoint position and orientation).
 	const ci::CameraPersp&	getHostCamera() const { return mHostCamera; }
@@ -373,9 +374,8 @@ private:
 	
 	void	initializeFrameBuffer();
 	void	initializeMirrorTexture( const glm::ivec2& size );
-	
-	void	startDrawFn( ci::app::Renderer *renderer );
-	void	finishDrawFn( ci::app::Renderer *renderer );
+	void	calcEyePoses();
+	void	submitFrame();
 	
 	mutable glm::mat4	mModelMatrix;
 	mutable bool		mModelMatrixCached = false;

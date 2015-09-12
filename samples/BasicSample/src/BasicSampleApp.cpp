@@ -42,14 +42,7 @@ BasicSampleApp::BasicSampleApp()
 : mViewerPosition{ vec3( 0, 0, 1 ) }
 , mCameraUi( &mCamera, app::getWindow() )
 {
-	try {
-		mShader = gl::GlslProg::create( gl::GlslProg::Format().vertex( loadAsset( "phong.vert" ) ).fragment( loadAsset( "phong.frag" ) ) );
-	}
-	catch( const std::exception& e ) {
-		console() << e.what() << std::endl;
-		quit();
-	}
-	
+	mShader = gl::GlslProg::create( gl::GlslProg::Format().vertex( loadAsset( "phong.vert" ) ).fragment( loadAsset( "phong.frag" ) ) );
 	mTeapot = gl::Batch::create( geom::Teapot().subdivisions( 12 ), mShader );
 
 	// Setup camera for the debug (main) window.
@@ -57,16 +50,13 @@ BasicSampleApp::BasicSampleApp()
 	mCamera.lookAt( vec3( 0 ) );
 	mCamera.setFov( 45.0f );
 
-	//gl::enableVerticalSync( false );
+	gl::disableAlphaBlending();
 	gl::enableDepthRead();
 	gl::enableDepthWrite();
 	gl::color( Color::white() );
 
-	CameraPersp host;
-	host.setEyePoint( mViewerPosition );
-	host.lookAt( vec3( 0 ) );
 	try {
-		mRift = OculusRift::create( OculusRift::Params().hostCamera( host ).screenPercentage( 1.4f ) );
+		mRift = OculusRift::create( OculusRift::Params().screenPercentage( 1.4f ) );
 	}
 	catch( const RiftExeption& exc ) {
 		CI_LOG_EXCEPTION( "Failed rift initialization.", exc );
@@ -80,11 +70,34 @@ void BasicSampleApp::update()
 	float t = float( mTime ) * 0.4f;
 	mLightWorldPosition = vec4( math<float>::sin( t ), math<float>::sin( t * 4.0f ), math<float>::cos( t ), 1 );
 
+	// Move head location
 	if( mRift ) {
 		auto host = mRift->getHostCamera();
 		host.setEyePoint( mViewerPosition + vec3( 0.5f * sin( app::getElapsedSeconds() ), 0, 0 ) );
 		host.lookAt( vec3( 0 ) );
 		mRift->setHostCamera( host );
+	}
+
+	// Draw from update due to conflicting WM_PAINT signal emitted by ovr_submitFrame (0.7 SDK).
+	gl::clear( Color( 0.02, 0.02, 0.1 ) );
+	if( mRift && ! mRift->isFrameSkipped() ) {
+		ScopedRiftBuffer bind{ mRift };
+
+		for( auto eye : mRift->getEyes() ) {
+			mRift->enableEye( eye );
+			mShader->uniform( "uLightViewPosition", mRift->getViewMatrix() * mLightWorldPosition );
+			mShader->uniform( "uSkyDirection", mRift->getViewMatrix() * vec4( 0, 1, 0, 0 ) );
+
+			drawScene();
+
+			// Draw positional tracking camera frustum
+			CameraPersp positional;
+			if( mRift->getPositionalTrackingCamera( &positional ) ) {
+				gl::setModelMatrix( mat4() );
+				gl::lineWidth( 1.0f );
+				gl::drawFrustum( positional );
+			}
+		}
 	}
 }
 
@@ -105,28 +118,7 @@ void BasicSampleApp::drawScene()
 
 void BasicSampleApp::draw()
 {
-	gl::clear( Color( 0.02, 0.02, 0.1 ) );
-
-	if( mRift && ! mRift->isFrameSkipped() ) {
-		ScopedRiftBuffer bind{ mRift };
-
-		for( auto eye : mRift->getEyes() ) {
-			mRift->enableEye( eye );
-			mShader->uniform( "uLightViewPosition", mRift->getViewMatrix() * mLightWorldPosition );
-			mShader->uniform( "uSkyDirection", mRift->getViewMatrix() * vec4( 0, 1, 0, 0 ) );
-
-			drawScene();
-
-			// Draw positional tracking camera frustum
-			CameraPersp positional;
-			if( mRift->getPositionalTrackingCamera( &positional ) ) {
-				gl::setModelMatrix( mat4() );
-				gl::lineWidth( 1.0f );
-				gl::drawFrustum( positional );
-			}
-		}
-	}
-	else {
+	if( ! mRift ) {
 		gl::viewport( getWindowSize() );
 		gl::setMatrices( mCamera );
 

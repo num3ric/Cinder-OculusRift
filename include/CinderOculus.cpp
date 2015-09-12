@@ -98,8 +98,13 @@ OculusRift::OculusRift( const Params& params )
 , mMirrorTexture( nullptr )
 , mSkipFrame( false )
 {
-	mHostCamera.setEyePoint( vec3( 0 ) );
-	mHostCamera.setViewDirection( vec3( 0, 0, -1 ) );
+	if( params.mHostCam.first ) {
+		mHostCamera = params.mHostCam.second;
+	}
+	else {
+		mHostCamera.setEyePoint( vec3( 0 ) );
+		mHostCamera.setViewDirection( vec3( 0, 0, -1 ) );
+	}
 	
 	ovrGraphicsLuid luid; //can't use in opengl
 	OVR_VERIFY( ovr_Create( &mHmd, &luid ) );
@@ -114,16 +119,6 @@ OculusRift::OculusRift( const Params& params )
 	initializeFrameBuffer();
 	initializeMirrorTexture( app::getWindowSize() );
 	updateEyeOffset();
-
-	// Override the window's startDraw() and finishDraw() methods, so we can inject our own code.
-	RendererGlRef rendererGl = std::dynamic_pointer_cast<RendererGl>( app::getWindow()->getRenderer() );
-	if( rendererGl ) {
-		rendererGl->setStartDrawFn( std::bind( &OculusRift::startDrawFn, this, std::placeholders::_1 ) );
-		rendererGl->setFinishDrawFn( std::bind( &OculusRift::finishDrawFn, this, std::placeholders::_1 ) );
-	}
-	else {
-		throw std::runtime_error( "CinderOculus can only be used in combination with RendererGl." );
-	}
 
 	if( app::App::get()->isFrameRateEnabled() ) {
 		CI_LOG_I( "Disabled framerate for better performance." );
@@ -169,10 +164,8 @@ void OculusRift::initializeFrameBuffer()
 	mDepthBuffer = std::unique_ptr<DepthBuffer>( new DepthBuffer( size, 0 ) );
 }
 
-void OculusRift::startDrawFn( Renderer *renderer )
+void OculusRift::calcEyePoses()
 {
-	//renderer->makeCurrentContext();
-
 	ovrFrameTiming ftiming = ovr_GetFrameTiming( mHmd, 0 );
 	ovrTrackingState hmdState = ovr_GetTrackingState( mHmd, ftiming.DisplayMidpointSeconds );
 	ovr_CalcEyePoses( hmdState.HeadPose.ThePose, mEyeViewOffset, mEyeRenderPose );
@@ -180,6 +173,8 @@ void OculusRift::startDrawFn( Renderer *renderer )
 
 void OculusRift::bind()
 {
+	calcEyePoses();
+
 	if( mRenderBuffer ) {
 		auto* set = mRenderBuffer->TextureSet;
 		set->CurrentIndex = ( set->CurrentIndex + 1 ) % set->TextureCount;
@@ -210,14 +205,16 @@ void OculusRift::enableEye( int eyeIndex, bool applyMatrices )
 	}
 }
 
-void OculusRift::unbind() const
+void OculusRift::unbind()
 {
 	if( mRenderBuffer ) {
 		mRenderBuffer->unsetRenderSurface();
 	}
+
+	submitFrame();
 }
 
-void OculusRift::finishDrawFn( Renderer *renderer )
+void OculusRift::submitFrame()
 {
 	// Set up positional data.
 	ovrViewScaleDesc viewScaleDesc;
@@ -253,7 +250,6 @@ void OculusRift::finishDrawFn( Renderer *renderer )
 			GL_COLOR_BUFFER_BIT, GL_NEAREST );
 		glBindFramebuffer( GL_READ_FRAMEBUFFER, 0 );
 	}
-	renderer->swapBuffers();
 	// Do NOT advance TextureSet currentIndex - that has already been done above just before rendering.
 }
 
