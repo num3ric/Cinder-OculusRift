@@ -374,6 +374,7 @@ private:
 	
 	void	initializeFrameBuffer();
 	void	initializeMirrorTexture( const glm::ivec2& size );
+	void	destroyMirrorTexture();
 	void	calcEyePoses();
 	void	submitFrame();
 	

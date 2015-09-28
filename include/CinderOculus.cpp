@@ -117,8 +117,10 @@ OculusRift::OculusRift( const Params& params )
 	}
 
 	initializeFrameBuffer();
-	initializeMirrorTexture( app::getWindowSize() );
 	updateEyeOffset();
+	app::getWindow()->getSignalResize().connect( [this](){
+		initializeMirrorTexture( app::getWindowSize() );
+	} );
 
 	if( app::App::get()->isFrameRateEnabled() ) {
 		CI_LOG_I( "Disabled framerate for better performance." );
@@ -133,10 +135,9 @@ OculusRift::OculusRift( const Params& params )
 
 OculusRift::~OculusRift()
 {
-	if( mMirrorTexture ) {
-		glDeleteFramebuffers( 1, &mMirrorFBO );
-		ovr_DestroyMirrorTexture( mHmd, (ovrTexture*)mMirrorTexture );
-	}
+	if( mMirrorTexture )
+		destroyMirrorTexture();
+
 	if( mRenderBuffer )
 		ovr_DestroySwapTextureSet( mHmd, mRenderBuffer->TextureSet );
 
@@ -148,6 +149,9 @@ OculusRift::~OculusRift()
 
 void OculusRift::initializeMirrorTexture( const glm::ivec2& size )
 {
+	if( mMirrorTexture )
+		destroyMirrorTexture();
+
 	OVR_VERIFY( ovr_CreateMirrorTextureGL( mHmd, GL_SRGB8_ALPHA8, size.x, size.y, (ovrTexture**)&mMirrorTexture ) );
 
 	glGenFramebuffers( 1, &mMirrorFBO );
@@ -155,6 +159,12 @@ void OculusRift::initializeMirrorTexture( const glm::ivec2& size )
 	glFramebufferTexture2D( GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, mMirrorTexture->OGL.TexId, 0 );
 	glFramebufferRenderbuffer( GL_READ_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, 0 );
 	glBindFramebuffer( GL_READ_FRAMEBUFFER, 0 );
+}
+
+void OculusRift::destroyMirrorTexture()
+{
+	glDeleteFramebuffers( 1, &mMirrorFBO );
+	ovr_DestroyMirrorTexture( mHmd, (ovrTexture*)mMirrorTexture );
 }
 
 void OculusRift::initializeFrameBuffer()
@@ -239,7 +249,7 @@ void OculusRift::submitFrame()
 	
 	mSkipFrame = ! (result == ovrSuccess);
 
-	if( isMirrored() ) {
+	if( mMirrorTexture && isMirrored() ) {
 		// Blit mirror texture to back buffer
 		glBindFramebuffer( GL_READ_FRAMEBUFFER, mMirrorFBO );
 		glBindFramebuffer( GL_DRAW_FRAMEBUFFER, 0 );
