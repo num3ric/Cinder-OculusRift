@@ -97,6 +97,7 @@ OculusRift::OculusRift( const Params& params )
 , mMirrorFBO( 0 )
 , mMirrorTexture( nullptr )
 , mSkipFrame( false )
+, mPerfHudMode( 0 )
 {
 	if( params.mHostCam.first ) {
 		mHostCamera = params.mHostCam.second;
@@ -135,6 +136,9 @@ OculusRift::OculusRift( const Params& params )
 
 OculusRift::~OculusRift()
 {
+	//To prevent SDK bug(?) where perf hud state is maintained by the runtime
+	cyclePerfHudModes( false );
+
 	if( mMirrorTexture )
 		destroyMirrorTexture();
 
@@ -357,6 +361,12 @@ bool OculusRift::isTracked( const ovrTrackingState& ts ) const
 {
 	bool tracked = (ts.StatusFlags & ovrStatus_PositionConnected) && (ts.StatusFlags & ovrStatus_PositionTracked);
 	return tracked && isPositionalTrackingEnabled();
+}
+
+void OculusRift::cyclePerfHudModes( bool enabled )
+{
+	mPerfHudMode = ( enabled ) ? (++mPerfHudMode) % int(ovrPerfHud_Count) : 0;
+	ovr_SetInt( mHmd, OVR_PERF_HUD_MODE, mPerfHudMode );
 }
 
 bool OculusRift::isMirrored() const

@@ -335,6 +335,8 @@ public:
 	bool	isPositionalTrackingEnabled() const { return mUsePositionalTracking; }
 	//! Enabling the use of positional tracking translations.
 	void	enablePositionalTracking( bool enabled ) { mUsePositionalTracking = enabled; }
+	//! Cycles through the performance compositor huds.
+	void	cyclePerfHudModes( bool enabled = true );
 
 	/*! OPTIONAL: ovrSuccess_NotVisible is returned if the frame wasn't actually displayed, which can happen when VR
 	application loses focus. Our sample code handles this case by updating the isFrameSkipped flag.
@@ -412,6 +414,8 @@ private:
 
 	ovrGLTexture*					mMirrorTexture;
 	GLuint							mMirrorFBO;
+
+	int								mPerfHudMode;
 };
 
 struct ScopedRiftBuffer

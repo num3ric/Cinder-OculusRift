@@ -56,7 +56,7 @@ BasicSampleApp::BasicSampleApp()
 	gl::color( Color::white() );
 
 	try {
-		mRift = OculusRift::create( OculusRift::Params().screenPercentage( 1.4f ) );
+		mRift = OculusRift::create( OculusRift::Params().screenPercentage( 1.0f ) );
 	}
 	catch( const RiftExeption& exc ) {
 		CI_LOG_EXCEPTION( "Failed rift initialization.", exc );
@@ -152,6 +152,9 @@ void BasicSampleApp::keyDown( KeyEvent event )
 		break;
 	case KeyEvent::KEY_t:
 		mRift->enablePositionalTracking( ! mRift->isPositionalTrackingEnabled() );
+		break;
+	case KeyEvent::KEY_p:
+		mRift->cyclePerfHudModes();
 		break;
 	}
 }
