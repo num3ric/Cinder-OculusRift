@@ -2,7 +2,7 @@
  *
  * Copyright (c) 2015
  * Paul Houx - The Barbarian Group
- * Eric Renaud-Houde - Moving Picture Company
+ * Eric Renaud-Houde - Moving Picture Company / The Mill
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or
