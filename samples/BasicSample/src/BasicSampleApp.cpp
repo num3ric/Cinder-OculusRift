@@ -56,7 +56,7 @@ BasicSampleApp::BasicSampleApp()
 	gl::color( Color::white() );
 
 	try {
-		mRift = OculusRift::create( OculusRift::Params().screenPercentage( 1.0f ) );
+		mRift = OculusRift::create();
 	}
 	catch( const RiftExeption& exc ) {
 		CI_LOG_EXCEPTION( "Failed rift initialization.", exc );

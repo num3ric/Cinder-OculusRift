@@ -82,6 +82,13 @@ static const unsigned int kDefaulTrackingCaps =
 | ovrTrackingCap_Position;
 
 
+OculusRift::Params::Params()
+: mHostCam{ false, ci::CameraPersp{} }
+, mClipDistance{ false, vec2(-1) }
+{
+
+}
+
 OculusRiftRef OculusRift::create( const Params& params )
 {
 	return OculusRiftRef( new OculusRift{ params } );
@@ -105,6 +112,11 @@ OculusRift::OculusRift( const Params& params )
 	else {
 		mHostCamera.setEyePoint( vec3( 0 ) );
 		mHostCamera.setViewDirection( vec3( 0, 0, -1 ) );
+	}
+
+	if( params.mClipDistance.first ) {
+		mEyeCamera.setNearClip( params.mClipDistance.second.x );
+		mEyeCamera.setFarClip( params.mClipDistance.second.y );
 	}
 	
 	ovrGraphicsLuid luid; //can't use in opengl
