@@ -266,7 +266,7 @@ public:
 		Params& hostCamera( const ci::CameraPersp& host ) { mHostCam = { true, host }; return *this; }
 		Params& monoscopic( bool mono ) { mIsMonoscopic = mono; return *this; }
 		Params& mirrored( bool mirror ) { mIsMirrrored = mirror; return *this; }
-		Params& clipDistance( float near, float far ) { mClipDistance = std::make_pair(true, glm::vec2(near, far)); return *this; }
+		Params& clipDistance(float nearClip, float farClip) { mClipDistance = { true, glm::vec2(nearClip, farClip) };  return *this; }
 		Params& positional( bool tracked ) { mUsePositionalTracking = tracked; return *this; }
 	private:
 		std::pair<bool, ci::CameraPersp> mHostCam;
