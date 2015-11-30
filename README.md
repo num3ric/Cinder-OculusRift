@@ -1,7 +1,7 @@
 Cinder-OculusRift
 ==================
 
-This is yet another Oculus Rift block for Cinder, and a collaboration between [Paul Houx](https://github.com/paulhoux) & myself. *Thanks Paul for all the initial work!* It currently uses version 0.7 of the Oculus SDK, and the latest glNext Cinder version. Support for DK2 Windows.
+This is yet another Oculus Rift block for Cinder, and a collaboration between [Paul Houx](https://github.com/paulhoux) & myself. *Thanks Paul for all the initial work!*
 
 Samples
 -----------------
