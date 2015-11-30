@@ -183,16 +183,16 @@ struct TextureBuffer
 	GLuint        fboId;
 	glm::ivec2         texSize;
 
-	TextureBuffer( ovrHmd hmd, glm::ivec2 size, int mipLevels, int sampleCount )
+	TextureBuffer( ovrSession session, glm::ivec2 size, int mipLevels, int sampleCount )
 	{
 		CI_ASSERT( sampleCount <= 1 ); // The code doesn't currently handle MSAA textures.
 		texSize = size;
 
 		// This texture isn't necessarily going to be a rendertarget, but it usually is.
-		CI_ASSERT( hmd ); // No HMD? A little odd.
+		CI_ASSERT( session );
 		CI_ASSERT( sampleCount == 1 ); // ovrHmd_CreateSwapTextureSetD3D11 doesn't support MSAA.
 
-		auto result = ovr_CreateSwapTextureSetGL( hmd, GL_SRGB8_ALPHA8, size.x, size.y, &TextureSet );
+		auto result = ovr_CreateSwapTextureSetGL( session, GL_SRGB8_ALPHA8, size.x, size.y, &TextureSet );
 		CI_ASSERT( result == ovrSuccess );
 
 		for( int i = 0; i < TextureSet->TextureCount; ++i ) {
@@ -379,7 +379,6 @@ private:
 	void	initializeFrameBuffer();
 	void	initializeMirrorTexture( const glm::ivec2& size );
 	void	destroyMirrorTexture();
-	void	calcEyePoses();
 	void	submitFrame();
 	
 	mutable glm::mat4	mModelMatrix;
@@ -403,7 +402,7 @@ private:
 	bool				mSkipFrame;
 
 	// Oculus Rift SDK
-	ovrHmd				mHmd;
+	ovrSession			mSession;
 	ovrHmdDesc			mHmdDesc;
 	ovrEyeType			mEye;
 	ovrEyeRenderDesc	mEyeRenderDesc[ovrEye_Count];
