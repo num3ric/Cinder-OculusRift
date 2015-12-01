@@ -105,6 +105,7 @@ OculusRift::OculusRift( const Params& params )
 , mMirrorTexture( nullptr )
 , mSkipFrame( false )
 , mPerfHudMode( 0 )
+, mSensorSampleTime( 0 )
 {
 	if( params.mHostCam.first ) {
 		mHostCamera = params.mHostCam.second;
@@ -241,7 +242,7 @@ void OculusRift::submitFrame()
 	viewScaleDesc.HmdSpaceToWorldScaleInMeters = 1.0f;
 
 	mBaseLayer.Header.Type = ovrLayerType_EyeFov;
-	mBaseLayer.Header.Flags = ovrLayerFlag_HighQuality | ovrLayerFlag_TextureOriginAtBottomLeft;
+	mBaseLayer.Header.Flags = ovrLayerFlag_TextureOriginAtBottomLeft;
 	for( auto eye : getEyes() ) {
 		viewScaleDesc.HmdToEyeViewOffset[eye] = mEyeViewOffset[eye];
 		mBaseLayer.Fov[eye]			= mEyeRenderDesc[eye].Fov;
