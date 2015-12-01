@@ -416,6 +416,8 @@ private:
 	ovrGLTexture*					mMirrorTexture;
 	GLuint							mMirrorFBO;
 
+	double							mSensorSampleTime;
+
 	int								mPerfHudMode;
 };
 

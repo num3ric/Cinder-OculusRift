@@ -191,6 +191,7 @@ void OculusRift::initializeFrameBuffer()
 void OculusRift::bind()
 {
 	double ftiming = ovr_GetPredictedDisplayTime( mSession, 0 );
+	mSensorSampleTime = ovr_GetTimeInSeconds();
 	ovrTrackingState hmdState = ovr_GetTrackingState( mSession, ftiming, ovrTrue );
 	ovr_CalcEyePoses( hmdState.HeadPose.ThePose, mEyeViewOffset, mEyeRenderPose );
 
@@ -251,7 +252,7 @@ void OculusRift::submitFrame()
 	auto size = mRenderBuffer->getSize();
 	mBaseLayer.Viewport[0] = { { 0, 0 }, { size.x / 2, size.y } };
 	mBaseLayer.Viewport[1] = { { (size.x + 1) / 2, 0 }, { size.x / 2, size.y } };
-
+	mBaseLayer.SensorSampleTime = mSensorSampleTime;
 
 	ovrLayerHeader* layers = &mBaseLayer.Header;
 	auto result = ovr_SubmitFrame( mSession, 0, &viewScaleDesc, &layers, 1 );
