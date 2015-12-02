@@ -54,6 +54,19 @@
 
 namespace hmd {
 
+struct PoseState
+{
+	PoseState( const ovrPoseStatef& ps );
+
+	glm::vec3   position;
+	glm::quat	orientation;
+	glm::vec3	angularVelocity;
+	glm::vec3	linearVelocity;
+	glm::vec3	angularAcceleration;
+	glm::vec3	linearAcceleration;
+	double		timeInSeconds;
+};
+
 ///////////////////// CONVERSIONS ///////////////////////////
 
 inline glm::ivec2 fromOvr( const ovrSizei& v )
@@ -306,6 +319,10 @@ public:
 
 	//! Get DK2 positional tracking camera
 	bool	getPositionalTrackingCamera( ci::CameraPersp* positional ) const;
+
+	//! Get hand pose information if tracked.
+	bool getHandPose( int handIndex, PoseState* ps ) const;
+
 	//! Get DK2 latencies (render, timewarp, post-present).
 	glm::vec3	getLatencies() const;
 

@@ -46,6 +46,18 @@ using namespace ci;
 using namespace ci::app;
 using namespace hmd;
 
+PoseState::PoseState( const ovrPoseStatef& ps )
+: position{ fromOvr( ps.ThePose.Position ) }
+, orientation{ fromOvr( ps.ThePose.Orientation ) }
+, angularVelocity{ fromOvr( ps.AngularVelocity ) }
+, angularAcceleration{ fromOvr( ps.AngularAcceleration ) }
+, linearVelocity{ fromOvr( ps.LinearVelocity ) }
+, linearAcceleration{ fromOvr( ps.LinearAcceleration ) }
+, timeInSeconds{ ps.TimeInSeconds }
+{
+
+}
+
 std::unique_ptr<RiftManager> RiftManager::mInstance = nullptr;
 std::once_flag RiftManager::mOnceFlag;
 
@@ -342,6 +354,16 @@ bool OculusRift::getPositionalTrackingCamera( CameraPersp* positional ) const
 	return false;
 }
 
+bool OculusRift::getHandPose( int handIndex, PoseState* ps ) const
+{
+	ovrTrackingState ts = ovr_GetTrackingState( mSession, 0.0f, ovrFalse );
+	ovrHandType hi = static_cast<ovrHandType>( handIndex );
+	if( (ts.HandStatusFlags[hi] & ovrStatus_OrientationTracked) && (ts.HandStatusFlags[hi] & ovrStatus_PositionTracked) ) {
+		*ps = PoseState{ ts.HandPoses[hi] };
+		return true;
+	}
+	return false;
+}
 
 glm::vec3 OculusRift::getLatencies() const
 {
