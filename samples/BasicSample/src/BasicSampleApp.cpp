@@ -97,7 +97,7 @@ void BasicSampleApp::drawScene()
 void BasicSampleApp::draw()
 {
 	gl::clear( Color( 0.02, 0.02, 0.1 ) );
-	if( mRift && !mRift->isFrameSkipped() ) {
+	if( mRift ) {
 		ScopedRiftBuffer bind{ mRift };
 
 		for( auto eye : mRift->getEyes() ) {

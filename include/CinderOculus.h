@@ -400,11 +400,6 @@ public:
 	//! Cycles through the performance compositor huds.
 	void	cyclePerfHudModes( bool enabled = true );
 
-	/*! OPTIONAL: ovrSuccess_NotVisible is returned if the frame wasn't actually displayed, which can happen when VR
-	application loses focus. Our sample code handles this case by updating the isFrameSkipped flag.
-	While frames are not visible, rendering is paused to eliminate unnecessary GPU load. */
-	bool	isFrameSkipped() const { return mSkipFrame; }
-
 	//! Returns the native resolution of the HMD.
 	glm::ivec2	getNativeHmdResolution() const { return fromOvr( mHmdDesc.Resolution ); }
 	//! Returns the size of the render target fbo (used by both eyes).
@@ -458,7 +453,7 @@ private:
 	bool				mIsMonoscopic;
 	bool				mUsePositionalTracking;
 
-	bool				mSkipFrame;
+	bool				mIsVisible;
 
 	// Oculus Rift SDK
 	long long			mFrameIndex;

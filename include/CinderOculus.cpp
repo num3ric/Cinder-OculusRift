@@ -116,7 +116,7 @@ OculusRift::OculusRift( const Params& params )
 , mSession( nullptr )
 , mMirrorFBO( 0 )
 , mMirrorTexture( nullptr )
-, mSkipFrame( false )
+, mIsVisible( true )
 , mPerfHudMode( 0 )
 , mSensorSampleTime( 0 )
 {
@@ -228,7 +228,7 @@ void OculusRift::bind()
 {
 	ovr_GetEyePoses( mSession, mFrameIndex, ovrTrue, mEyeViewOffset, mEyeRenderPose, &mSensorSampleTime );
 
-	if( mRenderBuffer ) {
+	if( mRenderBuffer && mIsVisible ) {
 		mRenderBuffer->setAndClearRenderSurface( mDepthBuffer.get() );
 	}
 }
@@ -258,14 +258,12 @@ void OculusRift::enableEye( int eyeIndex, bool applyMatrices )
 
 void OculusRift::unbind()
 {
-	if( mRenderBuffer ) {
+	if( mRenderBuffer && mIsVisible ) {
 		mRenderBuffer->unsetRenderSurface();
 		mRenderBuffer->commit();
 	}
 
 	submitFrame();
-
-	CI_CHECK_GL();
 }
 
 void OculusRift::submitFrame()
@@ -291,7 +289,7 @@ void OculusRift::submitFrame()
 
 	ovrLayerHeader* layers = &mBaseLayer.Header;
 	auto result = ovr_SubmitFrame( mSession, mFrameIndex, &viewScaleDesc, &layers, 1 );
-	mSkipFrame = ! (result == ovrSuccess);
+	mIsVisible = (result == ovrSuccess);
 	
 	if( mMirrorTexture && isMirrored() ) {
 		// Blit mirror texture to back buffer
@@ -311,7 +309,7 @@ void OculusRift::submitFrame()
 
 std::list<ovrEyeType> OculusRift::getEyes() const
 {
-	if( mSession )
+	if( mSession && mIsVisible )
 		return { ovrEye_Left, ovrEye_Right };
 	
 	return {};
