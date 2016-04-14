@@ -6,6 +6,7 @@
 Debug/
 Release/
 ipch/
+*.VC.opendb
 
 # Finder
 .DS_Store
