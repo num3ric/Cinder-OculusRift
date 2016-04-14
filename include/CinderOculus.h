@@ -168,198 +168,133 @@ static const glm::vec3 kLeapToRiftEuler = glm::vec3( -0.5f * (float)M_PI, 0, (fl
 //---------------------------------------------------------------------------------------
 struct DepthBuffer
 {
-    GLuint        texId;
+	GLuint        texId;
 
-    DepthBuffer( const glm::ivec2& size, int sampleCount)
-    {
-        assert(sampleCount <= 1); // The code doesn't currently handle MSAA textures.
+	DepthBuffer( glm::ivec2 size, int sampleCount )
+	{
+		CI_ASSERT( sampleCount <= 1 ); // The code doesn't currently handle MSAA textures.
 
-        glGenTextures(1, &texId);
-        glBindTexture(GL_TEXTURE_2D, texId);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glGenTextures( 1, &texId );
+		glBindTexture( GL_TEXTURE_2D, texId );
+		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
+		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
+		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
+		glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
+		glTexImage2D( GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT24, size.x, size.y, 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_INT, NULL );
+	}
 
-        GLenum internalFormat = GL_DEPTH_COMPONENT24;
-        GLenum type = GL_UNSIGNED_INT;
-        //if (GLE_ARB_depth_buffer_float)
-        //{
-        //    internalFormat = GL_DEPTH_COMPONENT32F;
-        //    type = GL_FLOAT;
-        //}
-
-        glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, size.x, size.y, 0, GL_DEPTH_COMPONENT, type, NULL);
-    }
-    ~DepthBuffer()
-    {
-        if (texId)
-        {
-            glDeleteTextures(1, &texId);
-            texId = 0;
-        }
-    }
+	~DepthBuffer() {
+		glDeleteTextures( 1, &texId );
+	}
 };
 
 //--------------------------------------------------------------------------
 struct TextureBuffer
 {
-    ovrSession          Session;
-    ovrTextureSwapChain  TextureChain;
-    GLuint              texId;
-    GLuint              fboId;
-    glm::ivec2          texSize;
+	ovrSession          mSession;
+	ovrTextureSwapChain	mTextureChain;
+	GLuint				mTexId;
+	GLuint				mFboId;
+	glm::ivec2			mSize;
 
-    TextureBuffer(ovrSession session, bool rendertarget, bool displayableOnHmd, const glm::ivec2& size, int mipLevels, unsigned char * data, int sampleCount) :
-        Session(session),
-        TextureChain(nullptr),
-        texId(0),
-        fboId(0),
-        texSize(0, 0)
-    {
-        assert(sampleCount <= 1); // The code doesn't currently handle MSAA textures.
+	TextureBuffer( ovrSession session, glm::ivec2 size, int mipLevels, int sampleCount )
+		: mSession( session )
+	{
+		CI_ASSERT( sampleCount <= 1 ); // The code doesn't currently handle MSAA textures.
+		mSize = size;
 
-        texSize = size;
+		// This texture isn't necessarily going to be a rendertarget, but it usually is.
+		CI_ASSERT( session );
+		CI_ASSERT( sampleCount == 1 ); // ovrHmd_CreateSwapTextureSetD3D11 doesn't support MSAA.
 
-        if (displayableOnHmd)
-        {
-            // This texture isn't necessarily going to be a rendertarget, but it usually is.
-            assert(session); // No HMD? A little odd.
-            assert(sampleCount == 1); // ovr_CreateSwapTextureSetD3D11 doesn't support MSAA.
+        ovrTextureSwapChainDesc desc = {};
+        desc.Type = ovrTexture_2D;
+        desc.ArraySize = 1;
+        desc.Width = mSize.x;
+        desc.Height = mSize.y;
+        desc.MipLevels = 1;
+        desc.Format = OVR_FORMAT_R8G8B8A8_UNORM_SRGB;
+        desc.SampleCount = 1;
+        desc.StaticImage = ovrFalse;
 
-            ovrTextureSwapChainDesc desc = {};
-            desc.Type = ovrTexture_2D;
-            desc.ArraySize = 1;
-            desc.Width = size.x;
-            desc.Height = size.y;
-            desc.MipLevels = 1;
-            desc.Format = OVR_FORMAT_R8G8B8A8_UNORM_SRGB;
-            desc.SampleCount = 1;
-            desc.StaticImage = ovrFalse;
+        ovrResult result = ovr_CreateTextureSwapChainGL( mSession, &desc, &mTextureChain );
 
-            ovrResult result = ovr_CreateTextureSwapChainGL(Session, &desc, &TextureChain);
+        int length = 0;
+		ovr_GetTextureSwapChainLength( mSession, mTextureChain, &length );
+		CI_ASSERT( result == ovrSuccess );
 
-            int length = 0;
-            ovr_GetTextureSwapChainLength(session, TextureChain, &length);
+		for( int i = 0; i < length; ++i ) {
+			GLuint chainTexId;
+			ovr_GetTextureSwapChainBufferGL( mSession, mTextureChain, i, &chainTexId );
+			glBindTexture( GL_TEXTURE_2D, chainTexId );
+			glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
+			glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
+			glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE );
+			glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE );
+		}
 
-            if(OVR_SUCCESS(result))
-            {
-                for (int i = 0; i < length; ++i)
-                {
-                    GLuint chainTexId;
-                    ovr_GetTextureSwapChainBufferGL(Session, TextureChain, i, &chainTexId);
-                    glBindTexture(GL_TEXTURE_2D, chainTexId);
+		if( mipLevels > 1 ) {
+			glGenerateMipmap( GL_TEXTURE_2D );
+		}
 
-                    if (rendertarget)
-                    {
-                        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-                        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-                        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-                        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-                    }
-                    else
-                    {
-                        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-                        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-                        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-                        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-                    }
-                }
-            }
-        }
-        else
-        {
-            glGenTextures(1, &texId);
-            glBindTexture(GL_TEXTURE_2D, texId);
+		glGenFramebuffers( 1, &mFboId );
+	}
 
-            if (rendertarget)
-            {
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-            }
-            else
-            {
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-            }
+	~TextureBuffer() {
+		if( mTextureChain ) {
+			ovr_DestroyTextureSwapChain( mSession, mTextureChain );
+			mTextureChain = nullptr;
+		}
+		if( mTexId ) {
+			glDeleteTextures( 1, &mTexId );
+			mTexId = 0;
+		}
+		if( mFboId ) {
+			glDeleteFramebuffers( 1, &mFboId );
+			mFboId = 0;
+		}
+	}
 
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_SRGB8_ALPHA8, texSize.x, texSize.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-        }
+	glm::ivec2 getSize() const
+	{
+		return mSize;
+	}
 
-        if (mipLevels > 1)
-        {
-            glGenerateMipmap(GL_TEXTURE_2D);
-        }
+	void setAndClearRenderSurface( DepthBuffer * dbuffer )
+	{
+		GLuint curTexId;
+		if( mTextureChain ) {
+			int curIndex;
+			ovr_GetTextureSwapChainCurrentIndex( mSession, mTextureChain, &curIndex );
+			ovr_GetTextureSwapChainBufferGL( mSession, mTextureChain, curIndex, &curTexId );
+		} else {
+			curTexId = mTexId;
+		}
 
-        glGenFramebuffers(1, &fboId);
-    }
+		glBindFramebuffer( GL_FRAMEBUFFER, mFboId );
+		glFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, curTexId, 0 );
+		glFramebufferTexture2D( GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, dbuffer->texId, 0 );
 
-    ~TextureBuffer()
-    {
-        if (TextureChain)
-        {
-            ovr_DestroyTextureSwapChain(Session, TextureChain);
-            TextureChain = nullptr;
-        }
-        if (texId)
-        {
-            glDeleteTextures(1, &texId);
-            texId = 0;
-        }
-        if (fboId)
-        {
-            glDeleteFramebuffers(1, &fboId);
-            fboId = 0;
-        }
-    }
+		glViewport( 0, 0, mSize.x, mSize.y );
+		glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 
-    const glm::ivec2& GetSize() const
-    {
-        return texSize;
-    }
+		//glEnable( GL_FRAMEBUFFER_SRGB );
+	}
 
-    void SetAndClearRenderSurface(DepthBuffer* dbuffer)
-    {
-        GLuint curTexId;
-        if (TextureChain)
-        {
-            int curIndex;
-            ovr_GetTextureSwapChainCurrentIndex(Session, TextureChain, &curIndex);
-            ovr_GetTextureSwapChainBufferGL(Session, TextureChain, curIndex, &curTexId);
-        }
-        else
-        {
-            curTexId = texId;
-        }
+	void unsetRenderSurface()
+	{
+		glBindFramebuffer( GL_FRAMEBUFFER, mFboId );
+		glFramebufferTexture2D( GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, 0, 0 );
+		glFramebufferTexture2D( GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, 0, 0 );
+	}
 
-        glBindFramebuffer(GL_FRAMEBUFFER, fboId);
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, curTexId, 0);
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, dbuffer->texId, 0);
-
-        glViewport(0, 0, texSize.x, texSize.y);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        glEnable(GL_FRAMEBUFFER_SRGB);
-    }
-
-    void UnsetRenderSurface()
-    {
-        glBindFramebuffer(GL_FRAMEBUFFER, fboId);
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, 0, 0);
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, 0, 0);
-    }
-
-    void Commit()
-    {
-        if (TextureChain)
-        {
-            ovr_CommitTextureSwapChain(Session, TextureChain);
-        }
-    }
+	void commit() {
+		if( mTextureChain ) {
+			ovr_CommitTextureSwapChain( mSession, mTextureChain );
+		}
+	}
 };
+
 
 class OculusRift;
 
@@ -473,7 +408,7 @@ public:
 	//! Returns the native resolution of the HMD.
 	glm::ivec2	getNativeHmdResolution() const { return fromOvr( mHmdDesc.Resolution ); }
 	//! Returns the size of the render target fbo (used by both eyes).
-	glm::ivec2	getFboSize() const { return mRenderBuffer->GetSize(); }
+	glm::ivec2	getFboSize() const { return mRenderBuffer->getSize(); }
 
 	//! Returns the host camera view matrix, which acts as the rift model matrix.
 	inline glm::mat4	getModelMatrix() const;
@@ -481,8 +416,8 @@ public:
 	inline glm::mat4	getViewMatrix() const;
 	//! Returns the composed host and (active) eye projection matrix.
 	glm::mat4	getProjectionMatrix() const;
-	//! Returns the active eye viewport.
-	std::pair<glm::ivec2, glm::ivec2> getEyeViewport() const { return fromOvr( mBaseLayer.Viewport[mEye] ); }
+	//! Returns the eye viewport.
+	ci::Area getEyeViewport( int eyeIndex ) const;
 
 private:
 	explicit OculusRift( const Params& params );
@@ -517,7 +452,6 @@ private:
 	EyeCamera			mEyeCamera;
 	ci::CameraPersp		mHostCamera;
 
-	float				mHeadScale;
 	float				mScreenPercentage;
 	unsigned int		mTrackingCaps;
 	bool				mIsMirrrored;
@@ -527,6 +461,7 @@ private:
 	bool				mSkipFrame;
 
 	// Oculus Rift SDK
+	long long			mFrameIndex;
 	ovrSession			mSession;
 	ovrHmdDesc			mHmdDesc;
 	ovrEyeType			mEye;

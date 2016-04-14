@@ -112,6 +112,7 @@ OculusRift::OculusRift( const Params& params )
 , mIsMirrrored( params.mIsMirrrored )
 , mIsMonoscopic( params.mIsMonoscopic )
 , mUsePositionalTracking( params.mUsePositionalTracking )
+, mFrameIndex( 0 )
 , mSession( nullptr )
 , mMirrorFBO( 0 )
 , mMirrorTexture( nullptr )
@@ -145,6 +146,8 @@ OculusRift::OculusRift( const Params& params )
 	app::getWindow()->getSignalResize().connect( [this](){
 		initializeMirrorTexture( app::getWindowSize() );
 	} );
+
+	//ovr_SetTrackingOriginType( mSession, ovrTrackingOrigin_EyeLevel );
 
 	if( app::App::get()->isFrameRateEnabled() ) {
 		CI_LOG_I( "Disabled framerate for better performance." );
@@ -204,26 +207,29 @@ void OculusRift::initializeMirrorTexture( const glm::ivec2& size )
 
 void OculusRift::destroyMirrorTexture()
 {
-	glDeleteFramebuffers( 1, &mMirrorFBO );
-	ovr_DestroyMirrorTexture( mSession, mMirrorTexture );
+	if( mMirrorFBO )
+		glDeleteFramebuffers( 1, &mMirrorFBO );
+	if( mMirrorTexture )
+		ovr_DestroyMirrorTexture( mSession, mMirrorTexture );
 }
 
 void OculusRift::initializeFrameBuffer()
 {
 	auto size = mScreenPercentage * vec2( fromOvr( mHmdDesc.Resolution ) );
-	mRenderBuffer = std::unique_ptr<TextureBuffer>( new TextureBuffer( mSession, true, true, size, 1, NULL, 1 ) );
+	mRenderBuffer = std::unique_ptr<TextureBuffer>( new TextureBuffer( mSession, size, 1, 1 ) );
 	mDepthBuffer = std::unique_ptr<DepthBuffer>( new DepthBuffer( size, 0 ) );
+
+	if( ! mRenderBuffer->mTextureChain ) {
+		CI_LOG_E( "Failed to create texture." );
+	}
 }
 
 void OculusRift::bind()
 {
-	double ftiming = ovr_GetPredictedDisplayTime( mSession, 0 );
-	mSensorSampleTime = ovr_GetTimeInSeconds();
-	ovrTrackingState hmdState = ovr_GetTrackingState( mSession, ftiming, ovrTrue );
-	ovr_CalcEyePoses( hmdState.HeadPose.ThePose, mEyeViewOffset, mEyeRenderPose );
+	ovr_GetEyePoses( mSession, mFrameIndex, ovrTrue, mEyeViewOffset, mEyeRenderPose, &mSensorSampleTime );
 
 	if( mRenderBuffer ) {
-		mRenderBuffer->SetAndClearRenderSurface( mDepthBuffer.get() );
+		mRenderBuffer->setAndClearRenderSurface( mDepthBuffer.get() );
 	}
 }
 
@@ -239,11 +245,11 @@ void OculusRift::enableEye( int eyeIndex, bool applyMatrices )
 		mEyeCamera.setEyePoint( vec3(0.0) );
 	}
 	mEyeCamera.setOrientation( fromOvr( mEyeRenderPose[mEye].Orientation ) );
-	unsigned int projectionModifier = ovrProjection_ClipRangeOpenGL;
-	mEyeCamera.mOvrProjection = fromOvr( ovrMatrix4f_Projection( mEyeRenderDesc[mEye].Fov, mEyeCamera.getNearClip(), mEyeCamera.getFarClip(), projectionModifier ) );
+	mEyeCamera.mOvrProjection = fromOvr( ovrMatrix4f_Projection( mEyeRenderDesc[mEye].Fov, mEyeCamera.getNearClip(), mEyeCamera.getFarClip(), ovrProjection_ClipRangeOpenGL ) );
 
 	if( applyMatrices ) {
-		gl::viewport( getEyeViewport() );
+		auto area = getEyeViewport( eyeIndex );
+		gl::viewport( area.getUL(), area.getSize() );
 		gl::setModelMatrix( getModelMatrix() );
 		gl::setViewMatrix( getViewMatrix() );
 		gl::setProjectionMatrix( getProjectionMatrix() );
@@ -253,10 +259,13 @@ void OculusRift::enableEye( int eyeIndex, bool applyMatrices )
 void OculusRift::unbind()
 {
 	if( mRenderBuffer ) {
-		mRenderBuffer->UnsetRenderSurface();
+		mRenderBuffer->unsetRenderSurface();
+		mRenderBuffer->commit();
 	}
 
 	submitFrame();
+
+	CI_CHECK_GL();
 }
 
 void OculusRift::submitFrame()
@@ -267,23 +276,23 @@ void OculusRift::submitFrame()
 
 	mBaseLayer.Header.Type = ovrLayerType_EyeFov;
 	mBaseLayer.Header.Flags = ovrLayerFlag_TextureOriginAtBottomLeft;
+	mBaseLayer.SensorSampleTime = mSensorSampleTime;
 	for( auto eye : getEyes() ) {
 		viewScaleDesc.HmdToEyeOffset[eye] = mEyeViewOffset[eye];
 		mBaseLayer.Fov[eye]			= mEyeRenderDesc[eye].Fov;
 		mBaseLayer.RenderPose[eye]	= mEyeRenderPose[eye];
+		auto area = getEyeViewport( eye );
+		auto sz = area.getSize();
+		mBaseLayer.Viewport[eye] = { { area.x1, area.y1 }, { sz.x, sz.y } };
 	}
-	mBaseLayer.ColorTexture[0] = mRenderBuffer->TextureChain;
+	mBaseLayer.ColorTexture[0] = mRenderBuffer->mTextureChain;
 	mBaseLayer.ColorTexture[1] = NULL;
-	auto size = mRenderBuffer->GetSize();
-	mBaseLayer.Viewport[0] = { { 0, 0 }, { size.x / 2, size.y } };
-	mBaseLayer.Viewport[1] = { { (size.x + 1) / 2, 0 }, { size.x / 2, size.y } };
-	mBaseLayer.SensorSampleTime = mSensorSampleTime;
+	
 
 	ovrLayerHeader* layers = &mBaseLayer.Header;
-	auto result = ovr_SubmitFrame( mSession, 0, &viewScaleDesc, &layers, 1 );
-	
+	auto result = ovr_SubmitFrame( mSession, mFrameIndex, &viewScaleDesc, &layers, 1 );
 	mSkipFrame = ! (result == ovrSuccess);
-
+	
 	if( mMirrorTexture && isMirrored() ) {
 		// Blit mirror texture to back buffer
 		glBindFramebuffer( GL_READ_FRAMEBUFFER, mMirrorFBO );
@@ -295,7 +304,8 @@ void OculusRift::submitFrame()
 			GL_COLOR_BUFFER_BIT, GL_NEAREST );
 		glBindFramebuffer( GL_READ_FRAMEBUFFER, 0 );
 	}
-	// Do NOT advance TextureSet currentIndex - that has already been done above just before rendering.
+
+	++mFrameIndex;
 }
 
 
@@ -305,6 +315,15 @@ std::list<ovrEyeType> OculusRift::getEyes() const
 		return { ovrEye_Left, ovrEye_Right };
 	
 	return {};
+}
+
+Area OculusRift::getEyeViewport( int eyeIndex ) const
+{
+	auto size = mRenderBuffer->getSize();
+	if( eyeIndex == 0 ) {
+		return Area{ 0, 0, size.x / 2, size.y };
+	}
+	return Area{ ( size.x + 1) / 2, 0, size.x, size.y };
 }
 
 glm::mat4 OculusRift::getModelMatrix() const

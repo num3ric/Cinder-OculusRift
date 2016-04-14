@@ -77,28 +77,6 @@ void BasicSampleApp::update()
 		host.lookAt( vec3( 0 ) );
 		mRift->setHostCamera( host );
 	}
-
-	// Draw from update due to conflicting WM_PAINT signal emitted by ovr_submitFrame (0.7 SDK).
-	gl::clear( Color( 0.02, 0.02, 0.1 ) );
-	if( mRift && ! mRift->isFrameSkipped() ) {
-		ScopedRiftBuffer bind{ mRift };
-
-		for( auto eye : mRift->getEyes() ) {
-			mRift->enableEye( eye );
-			mShader->uniform( "uLightViewPosition", mRift->getViewMatrix() * mLightWorldPosition );
-			mShader->uniform( "uSkyDirection", mRift->getViewMatrix() * vec4( 0, 1, 0, 0 ) );
-
-			drawScene();
-
-			// Draw positional tracking camera frustum
-			CameraPersp positional;
-			if( mRift->getPositionalTrackingCamera( &positional ) ) {
-				gl::setModelMatrix( mat4() );
-				gl::lineWidth( 1.0f );
-				gl::drawFrustum( positional );
-			}
-		}
-	}
 }
 
 void BasicSampleApp::drawScene()
@@ -118,7 +96,27 @@ void BasicSampleApp::drawScene()
 
 void BasicSampleApp::draw()
 {
-	if( ! mRift ) {
+	gl::clear( Color( 0.02, 0.02, 0.1 ) );
+	if( mRift && !mRift->isFrameSkipped() ) {
+		ScopedRiftBuffer bind{ mRift };
+
+		for( auto eye : mRift->getEyes() ) {
+			mRift->enableEye( eye );
+			mShader->uniform( "uLightViewPosition", mRift->getViewMatrix() * mLightWorldPosition );
+			mShader->uniform( "uSkyDirection", mRift->getViewMatrix() * vec4( 0, 1, 0, 0 ) );
+
+			drawScene();
+
+			// Draw positional tracking camera frustum
+			CameraPersp positional;
+			if( mRift->getPositionalTrackingCamera( &positional ) ) {
+				gl::setModelMatrix( mat4() );
+				gl::lineWidth( 1.0f );
+				gl::drawFrustum( positional );
+			}
+		}
+	}
+	else if( ! mRift ) {
 		gl::viewport( getWindowSize() );
 		gl::setMatrices( mCamera );
 
@@ -161,14 +159,21 @@ void BasicSampleApp::keyDown( KeyEvent event )
 
 void prepareSettings( App::Settings *settings )
 {
-	try{
+	settings->setTitle( "Oculus Rift Sample" );
+	settings->setWindowSize( 1920/2, 1080/2 );
+}
+
+//CINDER_APP( BasicSampleApp, RendererGl( RendererGl::Options().msaa(0) ), prepareSettings );
+
+int __stdcall WinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow )
+{
+	try {
 		RiftManager::initialize();
 	}
 	catch( const RiftExeption& exc ) {
 		CI_LOG_EXCEPTION( "Failed ovr initialization", exc );
 	}
-	settings->setTitle( "Oculus Rift Sample" );
-	settings->setWindowSize( 1920/2, 1080/2 );
+	cinder::app::RendererRef renderer( new RendererGl( RendererGl::Options().msaa( 0 ) ) );
+	cinder::app::AppMsw::main<BasicSampleApp>( renderer, "Oculus", prepareSettings );
+	return 0;
 }
-
-CINDER_APP( BasicSampleApp, RendererGl( RendererGl::Options().msaa(0) ), prepareSettings );
