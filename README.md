@@ -18,24 +18,22 @@ Usage
 First, initialize the rift manager in prepareSettings.
 
 ```
-using namespace hmd;
-
-RiftManager::initialize();
+hmd::RiftManager::initialize();
 ```
 
 Create an Oculus Rift instance:
 ```
-OculusRiftRef	mRift;
+hmd::OculusRiftRef	mRift;
 ...
-mRift = OculusRift::create();
+mRift = hmd::OculusRift::create();
 ```
 
 The OculusRift class has two cameras: a convenience host camera controlling the overall head position & orientation, and an active eye camera which is updated by the SDK according to the tracked position & orientation. Their transformations are composed and can be queried via the `hmd::OculusRift` interface.
 
 
-In the update()** loop, call bind to render the scene to the rift's framebuffers. Iterate over each eye (enabling it) and draw your scene as follows:
+In the draw() loop, call bind to render the scene to the rift's framebuffers. Iterate over each eye, drawing your scene as follows:
 ```
-ScopedRiftBuffer bind{ mRift };
+hmd::ScopedRiftBuffer bind{ mRift };
 ...
 for( auto eye : mRift.getEyes() ) {
 		mRift.enableEye( eye );
@@ -43,8 +41,6 @@ for( auto eye : mRift.getEyes() ) {
 }
 ```
 
-_*The draw code must be called from the update() loop due to a [bug in the latest SDK](https://forums.oculus.com/viewtopic.php?f=20&t=25930)._
-
-To avoid judder, make sure you hit **75fps**!
+To avoid judder, make sure you hit **90fps** for the CV1 and **75fps** for the DK2!
 
 
