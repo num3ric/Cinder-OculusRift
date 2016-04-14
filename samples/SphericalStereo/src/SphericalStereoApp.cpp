@@ -79,6 +79,11 @@ SphericalStereoApp::SphericalStereoApp()
 
 void SphericalStereoApp::update()
 {
+
+}
+
+void SphericalStereoApp::draw()
+{
 	if( mRift ) {
 		hmd::ScopedRiftBuffer bind{ mRift };
 		gl::clear();
@@ -109,11 +114,6 @@ void SphericalStereoApp::update()
 			}
 		}
 	}
-}
-
-void SphericalStereoApp::draw()
-{
-	
 }
 
 void SphericalStereoApp::fileDrop( FileDropEvent event )

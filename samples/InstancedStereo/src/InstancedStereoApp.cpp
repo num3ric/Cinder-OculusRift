@@ -56,6 +56,10 @@ InstancedStereoApp::InstancedStereoApp()
 void InstancedStereoApp::update()
 {
 	mTime = getElapsedSeconds();
+}
+
+void InstancedStereoApp::draw()
+{
 	gl::clear();
 
 	hmd::ScopedRiftBuffer bind{ mRift };
@@ -68,7 +72,7 @@ void InstancedStereoApp::update()
 		auto idx = 3 * static_cast<size_t>(eye);
 		worldToEyeClipMatrices.at( idx ) = mRift->getViewMatrix() * mRift->getModelMatrix();
 		worldToEyeClipMatrices.at( idx + 1 ) = mRift->getProjectionMatrix();
-		
+
 		// non-instanced scene
 		gl::lineWidth( 3.0f );
 		gl::drawCoordinateFrame( 2 );
@@ -88,11 +92,6 @@ void InstancedStereoApp::update()
 		mShader->uniform( "uWorldToEyeClipMatrices", worldToEyeClipMatrices.data(), 6 );
 		mTeapot->drawInstanced( 2 );
 	}
-}
-
-void InstancedStereoApp::draw()
-{
-
 }
 
 void InstancedStereoApp::keyDown( KeyEvent event )
