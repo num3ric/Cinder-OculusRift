@@ -159,21 +159,14 @@ void BasicSampleApp::keyDown( KeyEvent event )
 
 void prepareSettings( App::Settings *settings )
 {
-	settings->setTitle( "Oculus Rift Sample" );
-	settings->setWindowSize( 1920/2, 1080/2 );
-}
-
-//CINDER_APP( BasicSampleApp, RendererGl( RendererGl::Options().msaa(0) ), prepareSettings );
-
-int __stdcall WinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow )
-{
 	try {
 		RiftManager::initialize();
 	}
 	catch( const RiftExeption& exc ) {
 		CI_LOG_EXCEPTION( "Failed ovr initialization", exc );
 	}
-	cinder::app::RendererRef renderer( new RendererGl( RendererGl::Options().msaa( 0 ) ) );
-	cinder::app::AppMsw::main<BasicSampleApp>( renderer, "Oculus", prepareSettings );
-	return 0;
+	settings->setTitle( "Oculus Rift Sample" );
+	settings->setWindowSize( 1920/2, 1080/2 );
 }
+
+CINDER_APP( BasicSampleApp, RendererGl( RendererGl::Options().msaa(0) ), prepareSettings );

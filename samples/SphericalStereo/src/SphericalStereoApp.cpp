@@ -47,7 +47,6 @@ public:
 
 	void fileDrop( FileDropEvent event ) override;
 	void keyDown( KeyEvent event ) override;
-	void keyUp( KeyEvent event ) override;
 
 	hmd::OculusRiftRef	mRift;
 private:
@@ -147,14 +146,12 @@ void SphericalStereoApp::keyDown( KeyEvent event )
 	}
 }
 
-void SphericalStereoApp::keyUp( KeyEvent event )
+void prepareSettings( App::Settings *settings )
 {
-
-}
-
-CINDER_APP( SphericalStereoApp, RendererGl( RendererGl::Options().msaa( 0 ) ), []( App::Settings *settings ) {
 	hmd::RiftManager::initialize();
 	settings->disableFrameRate();
 	settings->setTitle( "Oculus Rift Sample" );
-	settings->setWindowSize( 1920/2, 1080/2 );
-} )
+	settings->setWindowSize( 1920 / 2, 1080 / 2 );
+}
+
+CINDER_APP( SphericalStereoApp, RendererGl( RendererGl::Options().msaa( 0 ) ), prepareSettings)
