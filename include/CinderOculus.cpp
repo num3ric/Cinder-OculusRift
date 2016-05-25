@@ -245,14 +245,14 @@ void OculusRift::enableEye( int eyeIndex, bool applyMatrices )
 		mEyeCamera.setEyePoint( vec3(0.0) );
 	}
 	mEyeCamera.setOrientation( fromOvr( mEyeRenderPose[mEye].Orientation ) );
-	mEyeCamera.mOvrProjection = fromOvr( ovrMatrix4f_Projection( mEyeRenderDesc[mEye].Fov, mEyeCamera.getNearClip(), mEyeCamera.getFarClip(), ovrProjection_ClipRangeOpenGL ) );
+	mEyeCamera.mOvrProjection = fromOvr( ovrMatrix4f_Projection( mEyeRenderDesc[mEye].Fov, mEyeCamera.getNearClip(), mEyeCamera.getFarClip(), ovrProjection_None ) );
 
 	if( applyMatrices ) {
 		auto area = getEyeViewport( eyeIndex );
 		gl::viewport( area.getUL(), area.getSize() );
 		gl::setModelMatrix( getModelMatrix() );
 		gl::setViewMatrix( getViewMatrix() );
-		gl::setProjectionMatrix( getProjectionMatrix() );
+		gl::setProjectionMatrix( mEyeCamera.mOvrProjection );
 	}
 }
 
@@ -336,11 +336,7 @@ glm::mat4 OculusRift::getViewMatrix() const
 
 glm::mat4 OculusRift::getProjectionMatrix() const
 {
-	if( ! mProjectionCached ) {
-		mProjectionMatrix = mEyeCamera.getProjectionMatrix();
-		mProjectionCached = true;
-	}
-	return mProjectionMatrix;
+	return mEyeCamera.mOvrProjection;
 }
 
 void OculusRift::enableMonoscopic( bool enabled )
