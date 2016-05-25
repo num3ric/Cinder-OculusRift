@@ -345,7 +345,7 @@ public:
 	//! Returns the convenience host camera (base viewpoint position and orientation).
 	const ci::CameraPersp&	getHostCamera() const { return mHostCamera; }
 	//! Set the base viewpoint position and orientation through the host camera. (Affects the model matrix.)
-	void	setHostCamera( const ci::CameraPersp& camera ) { mModelMatrixCached = false; mHostCamera = camera; }
+	void	setHostCamera( const ci::CameraPersp& camera ) { mHostCamera = camera; }
 
 	//! Enable the current rendered eye, applies the viewport and mvp matrices directly (optionally disabled). 
 	void	enableEye( int eyeIndex, bool applyMatrices = true );
@@ -435,20 +435,11 @@ private:
 	void	initializeMirrorTexture( const glm::ivec2& size );
 	void	destroyMirrorTexture();
 	void	submitFrame();
-	
-	mutable glm::mat4	mModelMatrix;
-	mutable bool		mModelMatrixCached = false;
-	mutable glm::mat4	mProjectionMatrix;
-	mutable bool		mProjectionCached = false;
-	mutable glm::mat4	mViewMatrix, mInverseViewMatrix;
-	mutable bool		mViewMatrixCached = false;
-	mutable bool		mInverseViewMatrixCached = false;
 
 	EyeCamera			mEyeCamera;
 	ci::CameraPersp		mHostCamera;
 
 	float				mScreenPercentage;
-	unsigned int		mTrackingCaps;
 	bool				mIsMirrrored;
 	bool				mIsMonoscopic;
 	bool				mUsePositionalTracking;

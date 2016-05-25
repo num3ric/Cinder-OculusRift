@@ -88,12 +88,6 @@ RiftManager::~RiftManager()
 	ovr_Shutdown();
 }
 
-static const unsigned int kDefaulTrackingCaps =
-  ovrTrackingCap_Orientation
-| ovrTrackingCap_MagYawCorrection
-| ovrTrackingCap_Position;
-
-
 OculusRift::Params::Params()
 : mHostCam{ false, ci::CameraPersp{} }
 , mClipDistance{ false, vec2(-1) }
@@ -108,7 +102,6 @@ OculusRiftRef OculusRift::create( const Params& params )
 
 OculusRift::OculusRift( const Params& params )
 : mScreenPercentage( params.mScreenPercentage )
-, mTrackingCaps( kDefaulTrackingCaps )
 , mIsMirrrored( params.mIsMirrrored )
 , mIsMonoscopic( params.mIsMonoscopic )
 , mUsePositionalTracking( params.mUsePositionalTracking )
@@ -235,7 +228,6 @@ void OculusRift::bind()
 
 void OculusRift::enableEye( int eyeIndex, bool applyMatrices )
 {
-	mProjectionCached = mViewMatrixCached = mInverseViewMatrixCached = false;
 	mEye = static_cast<ovrEyeType>( eyeIndex );
 
 	if( isPositionalTrackingEnabled() ) {
